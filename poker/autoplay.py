@@ -23,22 +23,38 @@ def set_premove(game, pid: str, move: str | None) -> None:
 
 
 def auto_advance(game) -> bool:
-    """Resolve automatic actions for whoever is to act: away players, auto
-    check/fold mode, or a queued pre-move. Loops because one auto action can
-    hand the turn to another auto player."""
+    """Resolve all pending auto actions at once (used by tests). The server
+    instead paces them with `step` + `pending` so each shows briefly."""
     acted = False
     for _ in range(SEAT_COUNT * 2):
-        if game.to_act is None:
+        if not step(game):
             break
-        p = game.get(game.to_act)
-        if p is None:
-            break
-        mv = _auto_move_for(game, p)
-        if mv is None:
-            break
-        game.act(p.id, mv)
         acted = True
     return acted
+
+
+def pending(game) -> bool:
+    """True if whoever is to act has something automatic queued."""
+    if game.to_act is None:
+        return False
+    p = game.get(game.to_act)
+    if p is None:
+        return False
+    return bool(p.away or p.auto_check_fold or p.premove)
+
+
+def step(game) -> bool:
+    """Apply at most one auto action. Returns True if a move was made."""
+    if game.to_act is None:
+        return False
+    p = game.get(game.to_act)
+    if p is None:
+        return False
+    mv = _auto_move_for(game, p)
+    if mv is None:
+        return False
+    game.act(p.id, mv)
+    return True
 
 
 def _auto_move_for(game, p) -> str | None:

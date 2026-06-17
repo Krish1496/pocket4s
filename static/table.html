@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-100">
+<body class="min-h-screen bg-slate-600 text-slate-50">
 
   <!-- Name prompt modal -->
   <div id="nameModal" class="modal-wrap">
@@ -110,6 +110,7 @@
   <main class="px-3 py-4 lg:px-6">
     <section class="max-w-[1100px] mx-auto">
       <div id="felt" class="felt mx-auto relative" style="height: min(66vh, 60vw); aspect-ratio: 1.6 / 1; max-width: 96vw; margin: 0 auto;">
+        <div id="pausedBanner" class="paused-banner hidden">⏸ PAUSED</div>
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
           <div id="potLabel" class="pot-label mb-2">Pot: 0</div>
           <div id="board" class="flex gap-2 justify-center"></div>
@@ -147,9 +148,9 @@
       <!-- Pre-move bar: queue an action for when it's your turn -->
       <div id="premoveBar" class="premove-bar hidden">
         <span class="text-xs text-slate-400 mr-1">Pre-move:</span>
-        <button class="pm" data-pm="check">Check</button>
-        <button class="pm" data-pm="call">Call</button>
-        <button class="pm" data-pm="checkfold">Check/Fold</button>
+        <button class="pm" data-pm="check">Check <kbd>K</kbd></button>
+        <button class="pm" data-pm="call">Call <kbd>C</kbd></button>
+        <button class="pm" data-pm="checkfold">Check/Fold <kbd>X</kbd></button>
         <button class="pm pm-clear" data-pm="">Clear</button>
       </div>
 
@@ -157,6 +158,7 @@
       <div id="controlBar" class="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button id="startBtn" class="btn-primary hidden">Start hand</button>
         <button id="nextBtn" class="btn-primary hidden">Next hand</button>
+        <button id="pauseBtn" class="btn-muted hidden">Pause</button>
         <button id="topupBtn" class="btn-muted hidden">Add chips</button>
         <button id="awayBtn" class="btn-muted hidden">Away</button>
         <button id="acfBtn" class="btn-muted hidden">Check/Fold mode</button>
@@ -194,7 +196,7 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=9"></script>
-  <script src="/static/panels.js?v=9"></script>
+  <script src="/static/poker.js?v=10"></script>
+  <script src="/static/panels.js?v=10"></script>
 </body>
 </html>

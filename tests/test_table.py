@@ -302,3 +302,35 @@ def test_bad_premove_is_rejected():
     _seat_two(g)
     with pytest.raises(ValueError):
         g.set_premove("a", "raise")
+
+
+def test_pause_requires_owner_and_toggles():
+    g = make_table()
+    _seat_two(g)
+    with pytest.raises(ValueError):
+        g.set_paused("b", True)        # not the owner
+    g.set_paused("a", True)
+    assert g.paused is True
+    g.set_paused("a", False)
+    assert g.paused is False
+
+
+def test_describe_detail_labels():
+    from poker.evaluator import describe_detail, HIGH_CARD, PAIR, TWO_PAIR, STRAIGHT
+    assert describe_detail((HIGH_CARD, 14, 13, 12, 11, 9)).startswith("High Card")
+    assert describe_detail((PAIR, 13, 14, 12, 11)).startswith("Pair (K")
+    assert "Two Pair" in describe_detail((TWO_PAIR, 14, 7, 5))
+    assert "Straight" in describe_detail((STRAIGHT, 10))
+
+
+def test_hand_name_appears_in_snapshot_for_your_own_cards():
+    from server.serialize import snapshot
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    # Deal a flop so there are >= 5 cards to evaluate.
+    g.act(g.to_act, "call")
+    g.act(g.to_act, "check")
+    snap = snapshot(g, "a")
+    me = next(p for p in snap["players"] if p["id"] == "a")
+    assert me["hand_name"] is not None

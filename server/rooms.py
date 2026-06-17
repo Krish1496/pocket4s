@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from fastapi import WebSocket
 
 from poker.game import Game
+from poker import autoplay
 from .serialize import snapshot
 
 
@@ -34,6 +35,7 @@ class Room:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     timer_task: asyncio.Task | None = field(default=None)
     autodeal_task: asyncio.Task | None = field(default=None)
+    autoplay_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -63,6 +65,7 @@ class Room:
             self.disconnect(pid, ws)
         self._arm_timer()
         self._arm_autodeal()
+        self._arm_autoplay()
 
     # --- action clock ---------------------------------------------------
     def _arm_timer(self) -> None:
@@ -73,7 +76,7 @@ class Room:
                 and not self.timer_task.done()):
             self.timer_task.cancel()
         left = self.game.time_left()
-        if left is None:
+        if left is None or self.game.paused:
             self.timer_task = None
             return
         self.timer_task = asyncio.create_task(
@@ -91,7 +94,33 @@ class Room:
             if left and left > 0:
                 return  # deadline got pushed; let the fresh timer handle it
             if self.game.auto_act_timeout():
-                self.game.auto_advance()
+                await self.broadcast()
+
+    # --- paced auto-play (away / pre-moves / check-fold) -----------------
+    AUTOPLAY_DELAY = 1.1  # cool-down so each auto action is visible
+
+    def _arm_autoplay(self) -> None:
+        """Schedule one paced auto action if the current actor has something
+        queued. Re-arms itself via broadcast after each step."""
+        g = self.game
+        if g.paused or not autoplay.pending(g):
+            return
+        if asyncio.current_task() is self.autoplay_task:
+            return
+        if self.autoplay_task and not self.autoplay_task.done():
+            return
+        self.autoplay_task = asyncio.create_task(self._run_autoplay(g.turn_seq))
+
+    async def _run_autoplay(self, seq: int) -> None:
+        try:
+            await asyncio.sleep(self.AUTOPLAY_DELAY)
+        except asyncio.CancelledError:
+            return
+        async with self.lock:
+            g = self.game
+            if g.paused or g.turn_seq != seq:
+                return  # turn moved (or paused) -- this step is stale
+            if autoplay.step(g):
                 await self.broadcast()
 
     # --- auto-deal ------------------------------------------------------
@@ -101,6 +130,7 @@ class Room:
         """If auto-deal is on and we're at showdown, schedule the next hand."""
         g = self.game
         ready = (g.settings.auto_deal and g.phase.value == "showdown"
+                 and not g.paused
                  and len(g.seated_with_chips()) >= 2)
         if not ready:
             return
@@ -121,7 +151,6 @@ class Room:
                     and g.hand_no == hand_no and len(g.seated_with_chips()) >= 2):
                 g.end_hand()
                 g.start_hand()
-                g.auto_advance()
                 await self.broadcast()
 
 

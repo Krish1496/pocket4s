@@ -112,3 +112,27 @@ def describe(score: tuple) -> str:
     if score[0] in (STRAIGHT, STRAIGHT_FLUSH):
         return f"{name}, {INT_TO_RANK[min(score[1], 14)]} high"
     return name
+
+
+def describe_detail(score: tuple) -> str:
+    """Short label with the key rank(s), e.g. 'Pair (K)', 'Two Pair (Q,7)',
+    'Straight (T high)'. Used for the live hand readout above a seat."""
+    r = INT_TO_RANK
+    cat = score[0]
+    if cat == HIGH_CARD:
+        return f"High Card ({r[score[1]]})"
+    if cat == PAIR:
+        return f"Pair ({r[score[1]]})"
+    if cat == TWO_PAIR:
+        return f"Two Pair ({r[score[1]]},{r[score[2]]})"
+    if cat == TRIPS:
+        return f"Trips ({r[score[1]]})"
+    if cat == STRAIGHT:
+        return f"Straight ({r[min(score[1], 14)]} high)"
+    if cat == FLUSH:
+        return f"Flush ({r[score[1]]} high)"
+    if cat == FULL_HOUSE:
+        return f"Full House ({r[score[1]]} over {r[score[2]]})"
+    if cat == QUADS:
+        return f"Quads ({r[score[1]]})"
+    return f"Straight Flush ({r[min(score[1], 14)]} high)"

@@ -12,6 +12,13 @@
     const owner = s.you.is_owner;
     show($("startBtn"), owner && s.phase === "waiting");
     show($("nextBtn"), owner && s.phase === "showdown");
+    const pause = $("pauseBtn");
+    show(pause, owner);
+    pause.textContent = s.paused ? "\u25B6 Resume" : "\u23F8 Pause";
+    pause.classList.toggle("btn-primary", s.paused);
+    pause.classList.toggle("btn-muted", !s.paused);
+    const banner = $("pausedBanner");
+    if (banner) show(banner, !!s.paused);
     show($("topupBtn"), s.you.seated);
     show($("standBtn"), s.you.seated && !isBetting);
     show($("settingsBtn"), owner);
@@ -224,6 +231,8 @@
       PP.send({ type: "away", value: !PP.state.you.away });
     $("acfBtn").onclick = () =>
       PP.send({ type: "auto_check_fold", value: !PP.state.you.auto_check_fold });
+    $("pauseBtn").onclick = () =>
+      PP.send({ type: "pause", value: !PP.state.paused });
     document.querySelectorAll(".pm").forEach((b) =>
       b.onclick = () => {
         const mv = b.dataset.pm || null;
@@ -273,6 +282,75 @@
     };
   }
   window.wirePanels = wirePanels;
+
+  // Keyboard shortcuts: C call, K check, R raise/X check-fold, F fold, H rabbit,
+  // M chat. On your turn -> live actions; while waiting -> pre-moves.
+  window.wireHotkeys = function () {
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target;
+      const tag = (el.tagName || "").toLowerCase();
+      const typing = tag === "input" || tag === "textarea" || el.isContentEditable;
+      const key = e.key.toLowerCase();
+      if (key === "m" && !typing) {
+        e.preventDefault();
+        if (window.openDrawer) window.openDrawer("chat");
+        setTimeout(() => { const c = $("chatInput"); if (c) c.focus(); }, 60);
+        return;
+      }
+      if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
+      if (typing) return;
+      if (key === "h") { e.preventDefault(); tryRabbit(); return; }
+      const bar = $("actionBar");
+      if (bar.classList.contains("hidden")) {
+        const pmBar = $("premoveBar");
+        if (pmBar && !pmBar.classList.contains("hidden")) {
+          const pm = (mv) => {
+            const b = pmBar.querySelector('.pm[data-pm="' + mv + '"]');
+            if (b) { e.preventDefault(); b.click(); }
+          };
+          if (key === "c") pm("call");
+          else if (key === "k") pm("check");
+          else if (key === "x") pm("checkfold");
+        }
+        return;
+      }
+      const fire = (sel) => {
+        const b = bar.querySelector(sel);
+        if (b && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
+      };
+      if (key === "c") fire('[data-act="call"]');
+      else if (key === "k") fire('[data-act="check"]');
+      else if (key === "r") { e.preventDefault(); focusRaise(); }
+      else if (key === "f") fire('[data-act="fold"]');
+    });
+  };
+
+  // Pop a short action bubble (CHECK / CALL 4 / FOLD ...) above a seat when a
+  // new hand-log line appears -- the visible 'they moved' cool-down cue.
+  const FLASH_VERBS = { checks: "CHECK", calls: "CALL", folds: "FOLD", bets: "BET", raises: "RAISE" };
+  window.detectFlashes = function (s) {
+    PP.flash = PP.flash || {};
+    const log = s.hand_log || [];
+    if (PP._logLen == null || s.hand_no !== PP.prevHandNo) PP._logLen = log.length;
+    const fresh = log.slice(PP._logLen);
+    PP._logLen = log.length;
+    if (!fresh.length) return;
+    const byName = {};
+    s.players.forEach((p) => { byName[p.name] = p.id; });
+    fresh.forEach((line) => {
+      for (const nm in byName) {
+        if (!line.startsWith(nm + " ")) continue;
+        const rest = line.slice(nm.length + 1);
+        const verb = FLASH_VERBS[rest.split(" ")[0]];
+        if (!verb) break;
+        const amt = rest.match(/\d+/);
+        PP.flash[byName[nm]] = { text: verb + (amt ? " " + amt[0] : ""),
+                                until: Date.now() + 1400 };
+        break;
+      }
+    });
+  };
 
   window.renderPanels = function (s) {
     renderControls(s);

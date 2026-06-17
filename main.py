@@ -104,6 +104,8 @@ async def _handle(room, pid: str, msg: dict) -> None:
     t = msg.get("type")
     try:
         if t == "action":
+            if g.paused:
+                raise ValueError("The game is paused")
             g.act(pid, msg.get("action", ""), int(msg.get("amount", 0)))
         elif t == "sit":
             g.request_sit(pid, int(msg.get("seat", -1)), int(msg.get("amount", 0)))
@@ -138,13 +140,12 @@ async def _handle(room, pid: str, msg: dict) -> None:
             g.set_away(pid, bool(msg.get("value")))
         elif t == "auto_check_fold":
             g.set_auto_check_fold(pid, bool(msg.get("value")))
+        elif t == "pause":
+            g.set_paused(pid, bool(msg.get("value")))
         elif t == "leave":
             g.remove_member(pid)
         elif t == "ping":
             pass
-        # Resolve any away players / pre-moves / auto check-fold now that the
-        # turn may have moved.
-        g.auto_advance()
     except ValueError as e:
         for ws in room.sockets.get(pid, set()):
             await ws.send_json({"type": "error", "message": str(e)})

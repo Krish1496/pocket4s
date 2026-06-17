@@ -1,8 +1,15 @@
 :root {
-  --felt: #0f5132;
-  --felt-edge: #0a3d25;
+  --felt: #157f3b;
+  --felt-edge: #0f5132;
   --card-w: 54px;
   --card-h: 76px;
+}
+
+/* A lighter overall room: soft slate gradient behind the table. */
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #64748b 0%, #475569 55%, #334155 100%)
+    fixed;
 }
 
 /* Playing cards ---------------------------------------------------------- */
@@ -88,12 +95,15 @@
 .seat .bet-chip {
   margin-top: 4px;
   display: inline-block;
-  background: #1e293b;
-  color: #fcd34d;
-  border: 1px solid #475569;
+  background: #0f172a;
+  color: #fde047;
+  border: 2px solid #f59e0b;
   border-radius: 999px;
-  font-size: 11px;
-  padding: 1px 8px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  padding: 3px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 .seat .cards { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; min-height: 48px; }
 
@@ -164,8 +174,52 @@
 .pm.active { background: #f59e0b; color: #1e293b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.6); }
 .pm.pm-clear { background: transparent; color: #94a3b8; }
 .pm.pm-clear:hover { color: #e2e8f0; }
+.pm kbd {
+  background: #0f172a; color: #cbd5e1; border-radius: 4px;
+  padding: 0 5px; font-size: 0.7rem; margin-left: 3px; border: 1px solid #475569;
+}
 .seat.away .pod { opacity: 0.55; }
 .away-tag { color: #fca5a5; font-size: 10px; font-weight: 700; }
+
+/* Live best-hand readout above a seat ----------------------------------- */
+.hand-name {
+  position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.92); color: #fde68a;
+  border: 1px solid #f59e0b; border-radius: 999px;
+  font-size: 11px; font-weight: 800; padding: 1px 9px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+/* Action flash bubble (CHECK / CALL 4 / FOLD ...) ----------------------- */
+.action-flash {
+  position: absolute; top: -2px; left: 50%;
+  transform: translateX(-50%);
+  background: #facc15; color: #1e293b;
+  font-size: 12px; font-weight: 900; letter-spacing: 0.5px;
+  border-radius: 6px; padding: 2px 9px; z-index: 5;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  animation: action-flash 1.4s ease-out forwards;
+}
+@keyframes action-flash {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(0.85); }
+  18% { opacity: 1; transform: translate(-50%, -10px) scale(1.08); }
+  35% { transform: translate(-50%, -10px) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -10px); }
+  100% { opacity: 0; transform: translate(-50%, -16px); }
+}
+
+/* Paused overlay banner ------------------------------------------------- */
+.paused-banner {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 20;
+  background: rgba(15, 23, 42, 0.9); color: #fbbf24;
+  border: 2px solid #fbbf24; border-radius: 999px;
+  font-size: 14px; font-weight: 900; letter-spacing: 1px;
+  padding: 4px 18px;
+  animation: pulse-pause 1.6s ease-in-out infinite;
+}
+@keyframes pulse-pause { 0%,100% { opacity: 0.75; } 50% { opacity: 1; } }
 
 /* Slide-in drawer (Log / Chat / Ledger) --------------------------------- */
 .drawer {
@@ -237,8 +291,8 @@
   letter-spacing: 0.5px;
 }
 
-/* Bet chips on each seat -- a touch larger too. */
-.seat .bet-chip { font-size: 13px; font-weight: 700; }
+/* Bet chips on each seat -- still big & legible on mobile. */
+.seat .bet-chip { font-size: 15px; font-weight: 900; padding: 2px 9px; }
 
 /* Transient chat bubble above a player's seat. */
 .chat-bubble {

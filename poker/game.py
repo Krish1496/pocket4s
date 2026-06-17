@@ -1,8 +1,8 @@
 """No-Limit Texas Hold'em table + hand engine.
 
-A single `Game` owns one table: members, owner, seated players, buy-in
-flow, ledger, settings, and the live hand state machine. Framework-
-agnostic. Flavor lives in extras.py / autoplay.py; money in ledger.py.
+A single `Game` owns one table (members, owner, seats, buy-ins, ledger,
+settings, live hand state) and is framework-agnostic. Flavor lives in
+extras.py / autoplay.py; money in ledger.py.
 """
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ class Game:
         self.players: list[Player] = []        # seated players, sorted by seat
 
         self.phase = Phase.WAITING
+        self.paused = False
         self.button = 0
         self._last_button_pid: str | None = None
         self.deck: Deck | None = None
@@ -105,8 +106,7 @@ class Game:
         return [s for s in range(SEAT_COUNT) if not self.seat_taken(s)]
 
     def seated_with_chips(self) -> list[Player]:
-        # No `connected` check: a reconnect blip must not block the next hand.
-        return [p for p in self.players if p.stack > 0]
+        return [p for p in self.players if p.stack > 0]  # no `connected` check (blip-safe)
 
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
         """Player asks to take a seat with a buy-in. Owner is auto-approved."""
@@ -155,8 +155,7 @@ class Game:
             self._log(f"Host declined {name}'s buy-in request")
 
     def owner_set_stack(self, owner_pid: str, target_pid: str, amount: int) -> None:
-        """Owner directly sets a player's stack; the delta hits the ledger as
-        a buy-in adjustment so net P/L stays honest."""
+        """Owner sets a player's stack; the delta hits the ledger as a buy-in."""
         self._require_owner(owner_pid)
         p = self.get(target_pid)
         if not p:
@@ -518,8 +517,7 @@ class Game:
             self._log(line)
 
     def reveal_rabbit(self, pid: str | None = None) -> None:
-        """On-demand rabbit hunt (click board / press H). Display only."""
-        extras.reveal_rabbit(self)
+        extras.reveal_rabbit(self)  # on-demand (click / H), display only
 
     def set_away(self, pid: str, value: bool) -> None:
         autoplay.set_away(self, pid, value)
@@ -532,6 +530,10 @@ class Game:
 
     def auto_advance(self) -> bool:
         return autoplay.auto_advance(self)
+
+    def set_paused(self, pid: str, value: bool) -> None:
+        self._require_owner(pid)
+        self.paused = bool(value)
 
     def end_hand(self) -> None:
         self.phase = Phase.WAITING
@@ -562,8 +564,7 @@ class Game:
         self.chat_log = self.chat_log[-100:]
 
     def _set_to_act(self, pid: str | None) -> None:
-        """Central place to change whose turn it is, so the action clock and
-        the turn sequence stay in lockstep."""
+        """Central place to change whose turn it is (keeps the clock in sync)."""
         self.to_act = pid
         self.turn_seq += 1
         timeout = self.settings.action_timeout
@@ -579,8 +580,7 @@ class Game:
         return max(0.0, self.turn_deadline - time.monotonic())
 
     def auto_act_timeout(self) -> bool:
-        """Time's up: auto-check if possible, otherwise fold. Returns True if
-        an action was actually taken."""
+        """Time's up: auto-check if possible, else fold. True if it acted."""
         pid = self.to_act
         p = self.get(pid) if pid else None
         if not p or not p.can_act:

@@ -206,6 +206,7 @@ function computeAnims(s) {
   }
   PP.anim = a;
   PP.prevBoardLen = s.board.length;
+  if (window.detectFlashes) window.detectFlashes(s);
   PP.prevHandNo = s.hand_no;
   PP.prevPhase = s.phase;
   PP.prevPot = s.pot;
@@ -306,6 +307,19 @@ function seatEl(p, xPct, yPct) {
   }
 
   wrap.append(cards, pod);
+  const fl = PP.flash && PP.flash[p.id];
+  if (fl && fl.until > Date.now()) {
+    const f = document.createElement("div");
+    f.className = "action-flash";
+    f.textContent = fl.text;
+    wrap.append(f);
+  }
+  if (p.hand_name) {
+    const hn = document.createElement("div");
+    hn.className = "hand-name";
+    hn.textContent = p.hand_name;
+    wrap.append(hn);
+  }
   if (p.round_bet > 0) {
     const bet = document.createElement("div");
     bet.className = "bet-chip";
@@ -554,45 +568,12 @@ function tryRabbit() {
   send({ type: "rabbit" });
 }
 
-// Keyboard shortcuts: C call, K check, R raise, M chat. Ignored while typing.
-function wireHotkeys() {
-  document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const el = e.target;
-    const tag = (el.tagName || "").toLowerCase();
-    const typing = tag === "input" || tag === "textarea" || el.isContentEditable;
-    const key = e.key.toLowerCase();
-
-    if (key === "m" && !typing) {                 // open chat + focus input
-      e.preventDefault();
-      if (window.openDrawer) window.openDrawer("chat");
-      setTimeout(() => { const c = $("chatInput"); if (c) c.focus(); }, 60);
-      return;
-    }
-    if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
-    if (typing) return;
-
-    if (key === "h") { e.preventDefault(); tryRabbit(); return; }  // rabbit hunt
-
-    const bar = $("actionBar");
-    if (bar.classList.contains("hidden")) return;  // only on your turn
-    const fire = (sel) => {
-      const b = bar.querySelector(sel);
-      if (b && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
-    };
-    if (key === "c") fire('[data-act="call"]');
-    else if (key === "k") fire('[data-act="check"]');
-    else if (key === "r") { e.preventDefault(); focusRaise(); }  // type amount, Enter to confirm
-    else if (key === "f") fire('[data-act="fold"]');
-  });
-}
-
 (async function main() {
   await ensurePid();
   await loadTableInfo();
   wireCore();
   if (window.wirePanels) window.wirePanels();
-  setInterval(() => { updateTimer(); pruneBubbles(); }, 250);
+  if (window.wireHotkeys) window.wireHotkeys();
   $("nameInput").value = PP.name;
   $("nameModal").classList.remove("hidden");
   $("nameInput").focus();

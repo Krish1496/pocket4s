@@ -8,8 +8,17 @@ Rules:
 from __future__ import annotations
 
 from poker.game import Game, Phase
-from poker.evaluator import describe
+from poker.evaluator import describe, describe_detail, best_hand
 from poker.settings import SEAT_COUNT
+
+
+def _hand_name(g: Game, p) -> str | None:
+    if not p.hole or len(g.board) < 3:
+        return None
+    cards = list(p.hole) + list(g.board)
+    if len(cards) < 5:
+        return None
+    return describe_detail(best_hand(cards))
 
 
 def _player_view(g: Game, p, viewer_id: str) -> dict:
@@ -31,6 +40,7 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
         "is_owner": g.owner == p.id,
         "hole": [c.code for c in p.hole] if show else (
             ["back", "back"] if p.in_hand and p.hole else []),
+        "hand_name": _hand_name(g, p) if show else None,
     }
 
 
@@ -59,6 +69,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
     return {
         "type": "state",
         "phase": g.phase.value,
+        "paused": getattr(g, "paused", False),
         "hand_no": g.hand_no,
         "board": [c.code for c in g.board],
         "rabbit": [c.code for c in g.rabbit_board],
