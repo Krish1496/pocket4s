@@ -31,6 +31,12 @@
     const panel = $("requestsPanel");
     const list = $("requestsList");
     const showPanel = s.you.is_owner && s.requests.length > 0;
+    const reqBtn = $("requestsBtn");
+    show(reqBtn, showPanel);
+    if (showPanel) {
+      reqBtn.innerHTML = "Requests " +
+        '<span class="req-badge">' + s.requests.length + "</span>";
+    }
     show(panel, showPanel);
     if (!showPanel) { list.innerHTML = ""; return; }
     list.innerHTML = "";
@@ -119,6 +125,18 @@
     show($("chatForm"), tab === "chat");
   }
 
+  // ---- drawer (Log / Chat / Ledger) -----------------------------------
+  function openDrawer(tab) {
+    if (tab) switchTab(tab);
+    show($("drawer"), true);
+    // Dim the table only on narrow screens; on desktop keep it visible.
+    show($("drawerScrim"), window.innerWidth <= 700);
+  }
+  function closeDrawer() {
+    show($("drawer"), false);
+    show($("drawerScrim"), false);
+  }
+
   // ---- modals ---------------------------------------------------------
   function openSitModal(seat) {
     const s = PP.state;
@@ -161,6 +179,14 @@
     document.querySelectorAll(".tab-btn").forEach((b) =>
       b.onclick = () => switchTab(b.dataset.tab));
     switchTab("hand");
+
+    // Drawer toggles -- the panel is hidden until you click one of these.
+    $("btnLog").onclick = () => openDrawer("hand");
+    $("btnChat").onclick = () => openDrawer("chat");
+    $("btnLedger").onclick = () => openDrawer("ledger");
+    $("requestsBtn").onclick = () => openDrawer("hand");
+    $("drawerClose").onclick = closeDrawer;
+    $("drawerScrim").onclick = closeDrawer;
 
     $("startBtn").onclick = () => PP.send({ type: "start" });
     $("nextBtn").onclick = () => PP.send({ type: "next_hand" });

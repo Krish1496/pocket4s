@@ -88,23 +88,27 @@
     </div>
   </div>
 
-  <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-    <div>
-      <h1 class="font-bold text-lg" id="tableName">Poker Table</h1>
-      <p class="text-xs text-slate-400" id="blindsInfo"></p>
+  <header class="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-800">
+    <div class="min-w-0">
+      <h1 class="font-bold text-lg truncate" id="tableName">Poker Table</h1>
+      <p class="text-xs text-slate-400 truncate" id="blindsInfo"></p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center justify-end flex-wrap gap-2">
       <span id="connDot" class="text-xs text-slate-400">connecting...</span>
+      <button id="btnLog" class="btn-muted text-sm">Log</button>
+      <button id="btnChat" class="btn-muted text-sm">Chat</button>
+      <button id="btnLedger" class="btn-muted text-sm">Ledger</button>
+      <button id="requestsBtn" class="btn-primary text-sm hidden">Requests</button>
       <button id="settingsBtn" class="btn-muted text-sm hidden">Settings</button>
-      <button id="shareBtn" class="btn-muted text-sm">Copy invite link</button>
+      <button id="shareBtn" class="btn-muted text-sm">Invite</button>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto p-3 lg:p-6 grid lg:grid-cols-[1fr_300px] gap-4">
-    <section>
-      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 760px; aspect-ratio: 1.7 / 1;">
+  <main class="px-3 py-4 lg:px-6">
+    <section class="max-w-[1100px] mx-auto">
+      <div id="felt" class="felt mx-auto relative" style="height: min(62vh, 58vw); aspect-ratio: 1.62 / 1; max-width: 96vw; margin: 0 auto;">
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-          <div id="potLabel" class="text-sm font-bold text-amber-300 mb-2">Pot: 0</div>
+          <div id="potLabel" class="text-base font-bold text-amber-300 mb-2">Pot: 0</div>
           <div id="board" class="flex gap-2 justify-center"></div>
           <div id="rabbitRow" class="flex gap-2 justify-center mt-2 opacity-60"></div>
           <div id="phaseLabel" class="mt-2 text-xs uppercase tracking-widest text-slate-300"></div>
@@ -145,40 +149,37 @@
         <p id="waitMsg" class="text-slate-400 text-sm w-full text-center"></p>
       </div>
     </section>
-
-    <!-- Side panel -->
-    <aside class="flex flex-col gap-4">
-      <!-- Buy-in requests (host) -->
-      <div id="requestsPanel" class="bg-slate-800 rounded-xl ring-1 ring-amber-600/50 p-3 hidden">
-        <h2 class="font-semibold text-sm mb-2 text-amber-300">Buy-in requests</h2>
-        <div id="requestsList" class="space-y-2"></div>
-      </div>
-
-      <!-- Tabbed panel: Hand log / Chat / Ledger -->
-      <div class="bg-slate-800 rounded-xl ring-1 ring-slate-700 flex flex-col h-[420px]">
-        <div class="flex border-b border-slate-700 text-sm">
-          <button data-tab="hand" class="tab-btn flex-1 py-2 font-semibold">Hand log</button>
-          <button data-tab="chat" class="tab-btn flex-1 py-2 font-semibold">Chat</button>
-          <button data-tab="ledger" class="tab-btn flex-1 py-2 font-semibold">Ledger</button>
-        </div>
-        <div id="tabHand" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300"></div>
-        <div id="tabChat" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300 hidden flex-col">
-          <div id="chatMsgs" class="flex-1 space-y-1"></div>
-        </div>
-        <div id="tabLedger" class="tab-pane flex-1 overflow-y-auto p-3 text-sm hidden"></div>
-        <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2">
-          <label for="chatInput" class="sr-only">Chat message</label>
-          <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
-                 class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-          <button class="btn-muted text-sm">Send</button>
-        </form>
-      </div>
-    </aside>
   </main>
+
+  <!-- Slide-in drawer: Log / Chat / Ledger (hidden until a toggle is clicked) -->
+  <div id="drawerScrim" class="drawer-scrim hidden"></div>
+  <aside id="drawer" class="drawer hidden">
+    <div class="flex items-center border-b border-slate-700">
+      <button data-tab="hand" class="tab-btn flex-1 py-3 font-semibold text-sm">Hand log</button>
+      <button data-tab="chat" class="tab-btn flex-1 py-3 font-semibold text-sm">Chat</button>
+      <button data-tab="ledger" class="tab-btn flex-1 py-3 font-semibold text-sm">Ledger</button>
+      <button id="drawerClose" class="px-3 py-3 text-slate-400 hover:text-white text-lg" aria-label="Close panel">&times;</button>
+    </div>
+    <div id="requestsPanel" class="bg-slate-900/60 border-b border-amber-600/40 p-3 hidden">
+      <h2 class="font-semibold text-sm mb-2 text-amber-300">Buy-in requests</h2>
+      <div id="requestsList" class="space-y-2"></div>
+    </div>
+    <div id="tabHand" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300"></div>
+    <div id="tabChat" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300 hidden">
+      <div id="chatMsgs" class="space-y-1"></div>
+    </div>
+    <div id="tabLedger" class="tab-pane flex-1 overflow-y-auto p-3 text-sm hidden"></div>
+    <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2 hidden">
+      <label for="chatInput" class="sr-only">Chat message</label>
+      <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
+             class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+      <button class="btn-muted text-sm">Send</button>
+    </form>
+  </aside>
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=2"></script>
-  <script src="/static/panels.js?v=2"></script>
+  <script src="/static/poker.js?v=3"></script>
+  <script src="/static/panels.js?v=3"></script>
 </body>
 </html>
