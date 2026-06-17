@@ -73,12 +73,15 @@ def snapshot(g: Game, viewer_id: str) -> dict:
     run_vote = None
     if g.run_vote:
         rv = g.run_vote
+        # Keep everyone's pick secret until all have chosen (no peeking!).
+        # We only reveal *that* a player has locked in, not what they picked.
         run_vote = {
             "max": rv["max"],
             "your_turn": rv["votes"].get(viewer_id) is None and viewer_id in rv["votes"],
             "your_vote": rv["votes"].get(viewer_id),
             "voters": [{"name": g.get(pid).name if g.get(pid) else "?",
-                        "vote": rv["votes"][pid]} for pid in rv["voters"]],
+                        "done": rv["votes"][pid] is not None,
+                        "you": pid == viewer_id} for pid in rv["voters"]],
         }
 
     # Owner sees the full request queue; others only see their own request.

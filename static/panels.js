@@ -323,8 +323,12 @@
     const rv = s.run_vote;
     if (!rv) { bar.classList.add("hidden"); return; }
     bar.classList.remove("hidden");
-    const tally = rv.voters.map((v) =>
-      `${escapeHtml(v.name)}: ${v.vote == null ? "\u2026" : v.vote + "\u00d7"}`).join("  \u2022  ");
+    // Don't reveal anyone's pick -- just who has locked in (\u2713) vs thinking.
+    const tally = rv.voters.map((v) => {
+      const mark = v.done ? "\u2713" : "\u2026";
+      const me = v.you && rv.your_vote ? ` (you: ${rv.your_vote}\u00d7)` : (v.you ? " (you)" : "");
+      return `${escapeHtml(v.name)} ${mark}${me}`;
+    }).join("  \u2022  ");
     if (rv.your_turn) {
       let btns = "";
       for (let i = 1; i <= rv.max; i++) btns += `<button class="rv" data-times="${i}">${i}\u00d7</button>`;
