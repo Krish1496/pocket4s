@@ -392,6 +392,29 @@ function setRaiseValue(v) {
   $("raiseAmount").value = v;
 }
 
+// Open the raise tools and put the cursor in the amount box (R hotkey).
+function focusRaise() {
+  const b = PP.raiseBounds;
+  if (!b) return false;                      // can't raise right now
+  $("raiseTools").classList.remove("hidden");
+  const amt = $("raiseAmount");
+  amt.focus();
+  amt.select();
+  return true;
+}
+
+// Commit the raise, clamped to the legal min/max (Enter in the amount box).
+function submitRaise() {
+  const b = PP.raiseBounds;
+  if (!b) return;
+  let v = parseInt($("raiseAmount").value, 10);
+  if (isNaN(v)) return;
+  v = Math.max(b.min, Math.min(b.max, v));   // clamp to legal range
+  setRaiseValue(v);
+  $("raiseAmount").blur();
+  send({ type: "action", action: "raise", amount: v });
+}
+
 // --- chat bubbles -------------------------------------------------------
 // Pop the newest chat line above the speaker's seat for a few seconds.
 const BUBBLE_MS = 5000;
@@ -489,6 +512,10 @@ function wireCore() {
   });
   $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
   $("raiseAmount").oninput = () => { $("raiseSlider").value = $("raiseAmount").value; };
+  // Enter in the amount box commits the raise.
+  $("raiseAmount").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); submitRaise(); }
+  });
 
   // Quick-bet chips set the raise amount; All-in fires immediately.
   document.querySelectorAll(".quick").forEach((btn) => {
@@ -539,7 +566,7 @@ function wireHotkeys() {
     };
     if (key === "c") fire('[data-act="call"]');
     else if (key === "k") fire('[data-act="check"]');
-    else if (key === "r") fire('[data-act="raise"]');
+    else if (key === "r") { e.preventDefault(); focusRaise(); }  // type amount, Enter to confirm
     else if (key === "f") fire('[data-act="fold"]');
   });
 }
