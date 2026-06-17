@@ -243,6 +243,50 @@
   to { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
+/* Motion: dealing, flipping, winning, pot bumps ------------------------- */
+@keyframes deal-in {
+  from { opacity: 0; transform: translateY(-22px) scale(0.8) rotate(-7deg); }
+  to { opacity: 1; transform: none; }
+}
+.card.deal-in { animation: deal-in 0.32s ease-out both; }
+
+@keyframes flip-in {
+  from { transform: rotateY(90deg); opacity: 0.25; }
+  to { transform: rotateY(0); opacity: 1; }
+}
+.card.flip-in { animation: flip-in 0.4s ease-out both; }
+
+@keyframes winner-glow {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.75), 0 0 18px rgba(34, 197, 94, 0.6); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.95), 0 0 30px rgba(34, 197, 94, 0.9); }
+}
+.seat.winner .pod {
+  border-color: #22c55e;
+  background: rgba(20, 83, 45, 0.96);
+  animation: winner-glow 1s ease-in-out infinite;
+}
+.seat.winner .name { color: #bbf7d0; }
+.seat.winner { opacity: 1 !important; z-index: 4; }
+.win-tag {
+  margin-top: 3px; display: inline-block;
+  background: #22c55e; color: #06281a;
+  font-size: 11px; font-weight: 900; border-radius: 999px;
+  padding: 1px 8px; animation: bubble-pop 0.25s ease-out;
+}
+
+@keyframes pot-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.22); color: #fde68a; }
+  100% { transform: scale(1); }
+}
+.pot-label.bump { animation: pot-pop 0.32s ease; }
+
+@keyframes chip-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.seat .bet-chip { animation: chip-pop 0.18s ease-out; }
+
 .seat-timer {
   position: absolute; top: -10px; left: -8px;
   background: #0f172a; color: #fbbf24; border: 2px solid #fbbf24;

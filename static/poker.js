@@ -155,7 +155,12 @@ function send(obj) {
 function render() {
   const s = PP.state;
   if (!s) return;
+  computeAnims(s);
   $("potLabel").textContent = `Pot: ${s.pot}`;
+  if (PP.anim.potBump) {
+    const pl = $("potLabel");
+    pl.classList.remove("bump"); void pl.offsetWidth; pl.classList.add("bump");
+  }
   $("phaseLabel").textContent = s.phase === "waiting" ? "Waiting for players" : s.phase;
   $("blindsInfo").textContent =
     `Blinds ${s.settings.small_blind}/${s.settings.big_blind}` +
@@ -169,12 +174,44 @@ function render() {
   if (window.renderPanels) window.renderPanels(s);
 }
 
+// Work out which one-shot animations this snapshot should trigger.
+function computeAnims(s) {
+  const a = { boardFrom: s.board.length, dealHoles: false,
+              flipReveal: false, potBump: false, winners: {} };
+  const newHand = s.hand_no !== PP.prevHandNo;
+  if (newHand) { PP.prevBoardLen = 0; }
+  a.boardFrom = PP.prevBoardLen || 0;
+  a.dealHoles = newHand && s.phase === "preflop";
+  a.flipReveal = s.phase === "showdown" && PP.prevPhase !== "showdown";
+  a.potBump = s.pot > (PP.prevPot || 0);
+  if (s.phase === "showdown" && s.results) {
+    s.results.pots.forEach((p) =>
+      (p.winners || []).forEach((w) => {
+        a.winners[w] = (a.winners[w] || 0) + p.amount_each;
+      }));
+  }
+  PP.anim = a;
+  PP.prevBoardLen = s.board.length;
+  PP.prevHandNo = s.hand_no;
+  PP.prevPhase = s.phase;
+  PP.prevPot = s.pot;
+}
+
 function renderBoard() {
   const s = PP.state;
   const board = $("board");
   board.innerHTML = "";
   for (let i = 0; i < 5; i++) {
-    board.append(s.board[i] ? cardEl(s.board[i]) : placeholderCard());
+    if (s.board[i]) {
+      const el = cardEl(s.board[i]);
+      if (i >= PP.anim.boardFrom) {           // newly dealt -> animate in
+        el.classList.add("deal-in");
+        el.style.animationDelay = ((i - PP.anim.boardFrom) * 0.09) + "s";
+      }
+      board.append(el);
+    } else {
+      board.append(placeholderCard());
+    }
   }
   const rabbit = $("rabbitRow");
   rabbit.innerHTML = "";
@@ -209,12 +246,24 @@ function seatEl(p, xPct, yPct) {
   if (p.id === PP.pid) wrap.classList.add("you");
   if (p.is_turn) wrap.classList.add("turn");
   if (p.status === "folded") wrap.classList.add("folded");
+  const winAmount = PP.anim.winners[p.id];
+  if (winAmount != null) wrap.classList.add("winner");
   wrap.style.left = xPct + "%";
   wrap.style.top = yPct + "%";
 
   const cards = document.createElement("div");
   cards.className = "cards";
-  (p.hole || []).forEach((c) => cards.append(cardEl(c, true)));
+  (p.hole || []).forEach((c, i) => {
+    const el = cardEl(c, true);
+    if (PP.anim.dealHoles) {
+      el.classList.add("deal-in");
+      el.style.animationDelay = (i * 0.07) + "s";
+    } else if (PP.anim.flipReveal && p.id !== PP.pid && c !== "back") {
+      el.classList.add("flip-in");          // opponent cards reveal at showdown
+      el.style.animationDelay = (i * 0.08) + "s";
+    }
+    cards.append(el);
+  });
 
   const pod = document.createElement("div");
   pod.className = "pod relative";
@@ -252,6 +301,12 @@ function seatEl(p, xPct, yPct) {
     bet.className = "bet-chip";
     bet.textContent = p.round_bet;
     wrap.append(bet);
+  }
+  if (winAmount != null) {
+    const tag = document.createElement("div");
+    tag.className = "win-tag";
+    tag.textContent = "WON +" + winAmount;
+    wrap.append(tag);
   }
   // Transient chat bubble above this seat.
   const bubble = PP.bubbles && PP.bubbles[p.id];
