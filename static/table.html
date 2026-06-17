@@ -108,6 +108,8 @@
   </header>
 
   <main class="px-3 py-4 lg:px-6">
+    <!-- Host chip-management popover (filled + positioned by panels.js) -->
+    <div id="hostMenu" class="host-menu hidden"></div>
     <section class="max-w-[1100px] mx-auto">
       <div id="felt" class="felt mx-auto relative" style="height: min(66vh, 60vw); aspect-ratio: 1.6 / 1; max-width: 96vw; margin: 0 auto;">
         <div id="pausedBanner" class="paused-banner hidden">⏸ PAUSED</div>
@@ -149,7 +151,7 @@
       <div id="premoveBar" class="premove-bar hidden">
         <span class="text-xs text-slate-400 mr-1">Pre-move:</span>
         <button class="pm" data-pm="check">Check <kbd>K</kbd></button>
-        <button class="pm" data-pm="call">Call <kbd>C</kbd></button>
+        <button class="pm" data-pm="call" title="Calls the current bet -- cancels if someone raises more">Call <kbd>C</kbd></button>
         <button class="pm" data-pm="checkfold">Check/Fold <kbd>X</kbd></button>
         <button class="pm pm-clear" data-pm="">Clear</button>
       </div>
@@ -196,7 +198,7 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=10"></script>
-  <script src="/static/panels.js?v=10"></script>
+  <script src="/static/poker.js?v=11"></script>
+  <script src="/static/panels.js?v=11"></script>
 </body>
 </html>

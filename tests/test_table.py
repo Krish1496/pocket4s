@@ -304,6 +304,18 @@ def test_bad_premove_is_rejected():
         g.set_premove("a", "raise")
 
 
+def test_precall_cancels_if_bet_rises_above_queued_level():
+    from poker import autoplay
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    p = g.get(g.to_act)
+    g.set_premove(p.id, "call")            # agree to the current bet
+    g.current_bet += g.settings.big_blind * 3   # someone shoves bigger
+    assert autoplay.step(g) is False       # pre-call does NOT fire
+    assert p.premove is None               # and it's consumed
+
+
 def test_pause_requires_owner_and_toggles():
     g = make_table()
     _seat_two(g)

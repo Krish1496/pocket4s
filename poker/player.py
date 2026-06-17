@@ -38,6 +38,9 @@ class Player:
         # One-shot pre-move queued while it's not your turn:
         # "check", "call", or "checkfold".
         self.premove: str | None = None
+        # Bet level when the pre-move was queued; a pre-call cancels if the
+        # bet rises above this (so you never call a surprise raise).
+        self.premove_level = 0
 
     # --- helpers ---------------------------------------------------------
     def reset_for_hand(self) -> None:
@@ -54,6 +57,7 @@ class Player:
         else:
             self.status = Status.SITTING_OUT
         self.premove = None
+        self.premove_level = 0
 
     def reset_for_street(self) -> None:
         self.round_bet = 0

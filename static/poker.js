@@ -299,11 +299,9 @@ function seatEl(p, xPct, yPct) {
     pod.append(t);
   }
   if (s.you.is_owner) {
-    const edit = document.createElement("button");
-    edit.className = "absolute -bottom-2 -right-2 bg-slate-700 hover:bg-slate-600 text-[10px] px-1.5 py-0.5 rounded";
-    edit.textContent = "edit";
-    edit.dataset.editStack = p.id;
-    pod.append(edit);
+    pod.classList.add("host-editable");
+    pod.dataset.hostMenu = p.id;
+    pod.title = "Host: click to manage chips";
   }
 
   wrap.append(cards, pod);
@@ -552,8 +550,8 @@ function wireCore() {
   $("felt").addEventListener("click", (e) => {
     const sit = e.target.closest("[data-sit-seat]");
     if (sit) { window.openSitModal(+sit.dataset.sitSeat); return; }
-    const edit = e.target.closest("[data-edit-stack]");
-    if (edit) { window.editStack(edit.dataset.editStack); }
+    const host = e.target.closest("[data-host-menu]");
+    if (host) { e.stopPropagation(); window.openHostMenu(host.dataset.hostMenu, e); }
   });
 
   wireHotkeys();

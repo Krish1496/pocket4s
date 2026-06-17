@@ -186,15 +186,39 @@
   }
   window.openSitModal = openSitModal;
 
-  function editStack(pid) {
+  // Host chip-management popover -- replaces the old per-seat 'edit' button.
+  function openHostMenu(pid, ev) {
     const p = PP.state.players.find((x) => x.id === pid);
     if (!p) return;
-    const val = prompt(`Set ${p.name}'s stack to:`, p.stack);
-    if (val === null) return;
-    const n = parseInt(val, 10);
-    if (!isNaN(n)) PP.send({ type: "set_stack", target: pid, amount: n });
+    const m = $("hostMenu");
+    const bb = PP.state.settings.big_blind || 1;
+    m.innerHTML =
+      `<div class="hm-title">${escapeHtml(p.name)} \u2014 ${p.stack} chips</div>` +
+      `<div class="hm-row">` +
+      [-10 * bb, -bb, bb, 10 * bb].map((d) =>
+        `<button class="hm-q" data-d="${d}">${d > 0 ? "+" : ""}${d}</button>`).join("") +
+      `</div>` +
+      `<div class="hm-row">` +
+      `<input id="hmAmount" type="number" min="0" value="${p.stack}" class="hm-input" />` +
+      `<button id="hmSet" class="hm-set">Set</button>` +
+      `</div>`;
+    const x = Math.min((ev && ev.clientX) || 80, window.innerWidth - 210);
+    const y = Math.min((ev && ev.clientY) || 80, window.innerHeight - 150);
+    m.style.left = x + "px";
+    m.style.top = y + "px";
+    m.classList.remove("hidden");
+    const setStack = (n) => {
+      if (!isNaN(n)) PP.send({ type: "set_stack", target: pid, amount: Math.max(0, n) });
+      closeHostMenu();
+    };
+    m.querySelectorAll(".hm-q").forEach((b) =>
+      b.onclick = () => setStack(p.stack + parseInt(b.dataset.d, 10)));
+    $("hmSet").onclick = () => setStack(parseInt($("hmAmount").value, 10));
+    $("hmAmount").onkeydown = (e) => { if (e.key === "Enter") $("hmSet").click(); };
   }
-  window.editStack = editStack;
+  function closeHostMenu() { $("hostMenu").classList.add("hidden"); }
+  window.openHostMenu = openHostMenu;
+  window.closeHostMenu = closeHostMenu;
 
   function fillSettings(s) {
     const g = s.settings;
@@ -214,6 +238,13 @@
     document.querySelectorAll(".tab-btn").forEach((b) =>
       b.onclick = () => switchTab(b.dataset.tab));
     switchTab("hand");
+
+    // Close the host chip menu when clicking anywhere outside it.
+    document.addEventListener("click", (e) => {
+      const m = $("hostMenu");
+      if (m.classList.contains("hidden")) return;
+      if (!m.contains(e.target) && !e.target.closest("[data-host-menu]")) closeHostMenu();
+    });
 
     // Drawer toggles -- the panel is hidden until you click one of these.
     $("btnLog").onclick = () => openDrawer("hand");
