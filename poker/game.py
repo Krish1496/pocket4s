@@ -32,8 +32,7 @@ class Game:
                  small_blind: int = 1, big_blind: int = 2,
                  starting_stack: int = 200, seed: int | None = None) -> None:
         self.settings = settings or TableSettings(
-            small_blind=small_blind, big_blind=big_blind,
-            default_buyin=starting_stack)
+            small_blind=small_blind, big_blind=big_blind, default_buyin=starting_stack)
         self.settings._normalize()
         self._seed = seed
 
@@ -53,6 +52,7 @@ class Game:
         self.run_boards: list = []          # one full board per run (RIT)
         self.run_vote: dict | None = None   # active run-it-twice vote, if any
         self.runout: dict | None = None     # paced all-in reveal in progress
+        self.equity: dict = {}              # {pid: win%} during all-in runouts
         self.current_bet = 0
         self.min_raise = self.bb
         self.to_act: str | None = None
@@ -197,8 +197,7 @@ class Game:
             "id": pid, "name": self.members.get(pid, "Player"),
             "kind": kind, "amount": amount, "seat": seat,
         })
-        self._log(f"{self.members.get(pid, 'Player')} requested a buy-in "
-                  f"of {amount} (awaiting host)")
+        self._log(f"{self.members.get(pid, 'Player')} requested a buy-in of {amount} (awaiting host)")
 
     def _pop_request(self, pid: str) -> dict | None:
         for i, r in enumerate(self.requests):
@@ -261,7 +260,7 @@ class Game:
         self.run_boards = []
         self.run_vote = None
         self.runout = None
-        self.runout = None
+        self.equity = {}
         self.current_bet = 0
         self.min_raise = self.bb
         self._acted = set()
@@ -285,8 +284,7 @@ class Game:
         if self._last_button_pid is None:
             self.button = elig[0]
         else:
-            start = next((i for i, p in enumerate(self.players)
-                          if p.id == self._last_button_pid), -1)
+            start = next((i for i, p in enumerate(self.players) if p.id == self._last_button_pid), -1)
             self.button = self._next_in_hand(start) if start >= 0 else elig[0]
         self._last_button_pid = self.players[self.button].id
 
@@ -542,6 +540,8 @@ class Game:
         self.rabbit_board = []
         self.run_boards = []
         self.run_vote = None
+        self.runout = None
+        self.equity = {}
         for p in self.players:
             p.hole = []
             p.round_bet = 0

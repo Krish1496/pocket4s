@@ -426,3 +426,25 @@ def test_room_paces_the_runout_one_street_at_a_time():
 
     after_one = asyncio.run(run())
     assert after_one == 4                     # one street revealed on the timer
+
+
+def test_equity_sums_to_about_100_and_favours_the_better_hand():
+    from poker.equity import win_chances
+    from poker.cards import Card
+    holes = {"a": [Card.from_str("As"), Card.from_str("Ah")],
+             "b": [Card.from_str("Ks"), Card.from_str("Kh")]}
+    eq = win_chances(holes, [], seed=1)
+    assert abs(eq["a"] + eq["b"] - 100.0) < 0.5   # the numbers add up
+    assert eq["a"] > eq["b"]                       # aces are ahead
+    # On a flopped set of kings the aces are nearly dead.
+    flop = [Card.from_str("Kd"), Card.from_str("7c"), Card.from_str("2h")]
+    eq2 = win_chances(holes, flop, seed=1)
+    assert eq2["b"] > 80 and eq2["a"] < 20
+
+
+def test_equity_exposed_during_all_in_runout():
+    g = make_table(action_timeout=0, run_it_twice=False)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    assert g.equity and set(g.equity) == {"a", "b"}
+    assert abs(sum(g.equity.values()) - 100.0) < 1.0

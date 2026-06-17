@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from .evaluator import best_hand, describe
 from .potting import build_pots, settle
+from .equity import win_chances
 
 MAX_RUNS = 5
 
@@ -44,6 +45,11 @@ def max_runs(game) -> int:
     return max(1, min(MAX_RUNS, len(game.deck) // per))
 
 
+def _recompute_equity(game) -> None:
+    holes = {p.id: p.hole for p in game.players if p.in_hand and p.hole}
+    game.equity = win_chances(holes, game.board)
+
+
 # --- voting ------------------------------------------------------------
 def offer(game) -> None:
     """Pause the hand and open voting. Disconnected players auto-vote 1 so a
@@ -53,6 +59,7 @@ def offer(game) -> None:
              for p in game.players if p.in_hand}
     game.run_vote = {"voters": voters, "votes": votes, "max": max_runs(game)}
     game._set_to_act(None)
+    _recompute_equity(game)
     game._log("All in! Players are choosing how many times to run it.")
     _maybe_resolve(game)
 
@@ -104,6 +111,7 @@ def _apply_frame(game) -> None:
     ri, board = ro["frames"][ro["i"]]
     game.board = board
     game.run_boards = [ro["boards"][k] for k in range(ri)]  # completed runs
+    _recompute_equity(game)
 
 
 def reveal_step(game) -> bool:
@@ -140,6 +148,7 @@ def _finalize(game) -> None:
         for i, b in enumerate(boards, 1):
             game._log(f"Run {i}: " + " ".join(c.code for c in b))
     game.runout = None
+    game.equity = {}
     game._finish_showdown()
 
 

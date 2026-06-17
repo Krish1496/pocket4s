@@ -265,6 +265,18 @@
       PP.send({ type: "auto_check_fold", value: !PP.state.you.auto_check_fold });
     $("pauseBtn").onclick = () =>
       PP.send({ type: "pause", value: !PP.state.paused });
+    const sBtn = $("soundBtn");
+    if (sBtn && window.PPSFX) {
+      PPSFX.enabled = localStorage.getItem("pp_sound") !== "off";
+      const paint = () => sBtn.textContent = (PPSFX.enabled ? "\u{1F50A}" : "\u{1F507}") + " Sound";
+      paint();
+      sBtn.onclick = () => {
+        PPSFX.enabled = !PPSFX.enabled;
+        localStorage.setItem("pp_sound", PPSFX.enabled ? "on" : "off");
+        paint();
+        if (PPSFX.enabled) PPSFX.play("call");   // little confirmation blip
+      };
+    }
     document.querySelectorAll(".pm").forEach((b) =>
       b.onclick = () => {
         const mv = b.dataset.pm || null;
@@ -445,6 +457,11 @@
         const amt = rest.match(/\d+/);
         PP.flash[byName[nm]] = { text: verb + (amt ? " " + amt[0] : ""),
                                 until: Date.now() + 1400 };
+        if (window.PPSFX) {
+          const k = rest.split(" ")[0];
+          PPSFX.play(k === "bets" ? "raise" : (k === "raises" ? "raise" :
+                     k === "calls" ? "call" : k === "checks" ? "check" : "fold"));
+        }
         break;
       }
     });

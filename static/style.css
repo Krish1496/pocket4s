@@ -243,6 +243,14 @@ body {
   font-size: 11px; font-weight: 800; padding: 1px 9px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
 }
+.win-pct {
+  position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+  background: #052e16; color: #6ee7b7;
+  border: 1px solid #10b981; border-radius: 999px;
+  font-size: 11px; font-weight: 900; padding: 1px 9px;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
 
 /* Action flash bubble (CHECK / CALL 4 / FOLD ...) ----------------------- */
 .action-flash {

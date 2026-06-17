@@ -49,6 +49,7 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
         "hole": [c.code for c in p.hole] if show else (
             ["back", "back"] if p.in_hand and p.hole else []),
         "hand_name": _hand_name(g, p) if show else None,
+        "win_pct": g.equity.get(p.id) if g.equity and p.in_hand else None,
     }
 
 

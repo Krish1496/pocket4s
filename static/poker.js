@@ -208,6 +208,13 @@ function computeAnims(s) {
       }));
   }
   PP.anim = a;
+  if (window.PPSFX) {
+    if (a.dealHoles || s.board.length > (PP.prevBoardLen || 0)) PPSFX.play("deal");
+    if (a.flipReveal) PPSFX.play("win");
+    const mine = s.you && s.to_act === s.you.id, left = s.turn_seconds_left;
+    if (mine && left != null && left <= 5 && (PP._prevLeft == null || PP._prevLeft > 5)) PPSFX.play("timeout");
+    PP._prevLeft = mine ? left : null;
+  }
   PP.prevBoardLen = s.board.length;
   if (window.detectFlashes) window.detectFlashes(s);
   PP.prevHandNo = s.hand_no;
@@ -314,6 +321,12 @@ function seatEl(p, xPct, yPct) {
     f.className = "action-flash";
     f.textContent = fl.text;
     wrap.append(f);
+  }
+  if (p.win_pct != null) {
+    const eq = document.createElement("div");
+    eq.className = "win-pct";
+    eq.textContent = p.win_pct + "%";
+    wrap.append(eq);
   }
   if (p.hand_name) {
     const hn = document.createElement("div");
