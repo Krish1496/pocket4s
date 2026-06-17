@@ -45,7 +45,6 @@ function cardEl(code, small) {
 }
 PP.cardEl = cardEl;
 
-// A real 3D flip: starts face-down (card back) and rotates to reveal `code`.
 function flipCardEl(code, small, delay) {
   const wrap = document.createElement("div");
   wrap.className = "flip3d" + (small ? " small" : "");
@@ -105,7 +104,7 @@ function connect() {
   PP.ws = new WebSocket(url);
 
   PP.ws.onopen = () => {
-    PP.reconnectAttempts = 0;            // reset backoff on success
+    PP.reconnectAttempts = 0;
     $("connDot").textContent = "connected";
     $("connDot").className = "text-xs text-emerald-400";
     startHeartbeat();
@@ -115,7 +114,6 @@ function connect() {
     stopHeartbeat();
     console.warn("WebSocket closed", { code: ev && ev.code, reason: ev && ev.reason });
     // 4404 = the server has no such table (it restarted and lost it, or the
-    // link is wrong). Don't loop forever -- tell the player plainly.
     if (ev && ev.code === 4404) {
       tableGone();
       return;
@@ -135,7 +133,6 @@ function connect() {
   };
 }
 
-// Keep the socket warm so idle proxies / VPNs don't silently kill it.
 function startHeartbeat() {
   stopHeartbeat();
   PP.heartbeat = setInterval(() => {
@@ -192,7 +189,6 @@ function render() {
   if (window.renderPanels) window.renderPanels(s);
 }
 
-// Work out which one-shot animations this snapshot should trigger.
 function computeAnims(s) {
   const a = { boardFrom: s.board.length, dealHoles: false,
               flipReveal: false, potBump: false, winners: {} };
@@ -221,7 +217,7 @@ function renderBoard() {
   board.innerHTML = "";
   for (let i = 0; i < 5; i++) {
     if (s.board[i]) {
-      if (i >= PP.anim.boardFrom) {           // newly dealt -> real flip in
+      if (i >= PP.anim.boardFrom) {
         board.append(flipCardEl(s.board[i], false, (i - PP.anim.boardFrom) * 0.12));
       } else {
         board.append(cardEl(s.board[i]));
@@ -243,7 +239,6 @@ function renderSeats() {
   const bySeat = {};
   s.players.forEach((p) => { bySeat[p.seat] = p; });
 
-  // Order seats so I'm at the bottom. Build a circular seat list.
   const n = s.seat_count;
   const mySeat = s.you.seat;
   for (let visual = 0; visual < n; visual++) {
@@ -263,6 +258,7 @@ function seatEl(p, xPct, yPct) {
   if (p.id === PP.pid) wrap.classList.add("you");
   if (p.is_turn) wrap.classList.add("turn");
   if (p.status === "folded") wrap.classList.add("folded");
+  if (p.away) wrap.classList.add("away");
   const winAmount = PP.anim.winners[p.id];
   if (winAmount != null) wrap.classList.add("winner");
   wrap.style.left = xPct + "%";
@@ -272,9 +268,9 @@ function seatEl(p, xPct, yPct) {
   cards.className = "cards";
   (p.hole || []).forEach((c, i) => {
     if (PP.anim.dealHoles && c !== "back") {
-      cards.append(flipCardEl(c, true, i * 0.08));     // deal -> flip my cards up
+      cards.append(flipCardEl(c, true, i * 0.08));
     } else if (PP.anim.flipReveal && p.id !== PP.pid && c !== "back") {
-      cards.append(flipCardEl(c, true, i * 0.1));      // opponents reveal at showdown
+      cards.append(flipCardEl(c, true, i * 0.1));
     } else {
       cards.append(cardEl(c, true));
     }
@@ -285,8 +281,9 @@ function seatEl(p, xPct, yPct) {
   const disc = p.connected ? "" : '<span class="disconnected-dot" title="disconnected"></span>';
   const crown = p.is_owner ? " \u2605" : "";
   const topup = p.pending_topup ? ` <span class="text-emerald-400">(+${p.pending_topup})</span>` : "";
+  const awayTag = p.away ? ' <span class="away-tag">AWAY</span>' : "";
   pod.innerHTML =
-    `<div class="name">${escapeHtml(p.name)}${crown}${disc}</div>` +
+    `<div class="name">${escapeHtml(p.name)}${crown}${disc}${awayTag}</div>` +
     `<div class="stack">${p.stack} chips${topup}</div>`;
   if (p.is_button) {
     const b = document.createElement("div");
@@ -382,7 +379,6 @@ function renderActionBar() {
   updateTimer();
 }
 
-// Quick-bet sizing. `kind` is min / half / twothirds / pot / allin.
 function quickRaiseTo(kind) {
   const s = PP.state, you = s.you, b = PP.raiseBounds;
   if (!b) return null;
@@ -404,7 +400,6 @@ function setRaiseValue(v) {
   $("raiseAmount").value = v;
 }
 
-// Open the raise tools and put the cursor in the amount box (R hotkey).
 function focusRaise() {
   const b = PP.raiseBounds;
   if (!b) return false;                      // can't raise right now
@@ -415,7 +410,13 @@ function focusRaise() {
   return true;
 }
 
-// Commit the raise, clamped to the legal min/max (Enter in the amount box).
+function doFold() {
+  const you = PP.state && PP.state.you;
+  if (you && you.can_check &&
+      !confirm("You can check for free \u2014 fold anyway?")) return;
+  send({ type: "action", action: "fold" });
+}
+
 function submitRaise() {
   const b = PP.raiseBounds;
   if (!b) return;
@@ -431,7 +432,6 @@ const BUBBLE_MS = 5000;
 function onStateChat() {
   const log = (PP.state && PP.state.chat_log) || [];
   if (PP.lastChatN === undefined) {
-    // First snapshot: don't pop historical messages, just remember the max.
     PP.lastChatN = log.reduce((m, x) => Math.max(m, x.n || 0), 0);
     return;
   }
@@ -513,8 +513,9 @@ function wireCore() {
   document.querySelectorAll(".act-btn").forEach((btn) => {
     btn.onclick = () => {
       const act = btn.dataset.act;
-      if (act === "raise") send({ type: "action", action: "raise", amount: +$("raiseAmount").value });
-      else send({ type: "action", action: act });
+      if (act === "raise") { send({ type: "action", action: "raise", amount: +$("raiseAmount").value }); return; }
+      if (act === "fold") { doFold(); return; }
+      send({ type: "action", action: act });
     };
   });
   $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
@@ -542,11 +543,9 @@ function wireCore() {
   });
 
   wireHotkeys();
-  // Click the community cards to rabbit-hunt after a folded-out hand.
   $("board").addEventListener("click", tryRabbit);
 }
 
-// Ask the server to reveal the rest of the board (rabbit hunt).
 function tryRabbit() {
   const s = PP.state;
   if (!s || s.phase !== "showdown") return;

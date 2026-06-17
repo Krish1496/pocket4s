@@ -16,6 +16,18 @@
     show($("standBtn"), s.you.seated && !isBetting);
     show($("settingsBtn"), owner);
 
+    // Away + persistent check/fold toggles (your own seat).
+    const away = $("awayBtn");
+    show(away, s.you.seated);
+    away.textContent = s.you.away ? "\u23F8 Away (tap to return)" : "Away";
+    away.classList.toggle("btn-primary", s.you.away);
+    away.classList.toggle("btn-muted", !s.you.away);
+    const acf = $("acfBtn");
+    show(acf, s.you.seated);
+    acf.textContent = s.you.auto_check_fold ? "Check/Fold: ON" : "Check/Fold mode";
+    acf.classList.toggle("btn-primary", s.you.auto_check_fold);
+    acf.classList.toggle("btn-muted", !s.you.auto_check_fold);
+
     $("startBtn").disabled = !s.can_start;
     const msg = $("waitMsg");
     if (s.phase === "waiting") {
@@ -24,6 +36,17 @@
       else if (!owner) msg.textContent = "Waiting for the host to start the hand.";
       else msg.textContent = "";
     } else { msg.textContent = ""; }
+  }
+
+  // ---- pre-move bar (queue an action while waiting) -------------------
+  function renderPremove(s) {
+    const bar = $("premoveBar");
+    const betting = ["preflop", "flop", "turn", "river"].includes(s.phase);
+    const canPremove = s.you.in_hand && betting && s.to_act && s.to_act !== s.you.id;
+    show(bar, canPremove);
+    if (!canPremove) return;
+    bar.querySelectorAll(".pm").forEach((b) =>
+      b.classList.toggle("active", (b.dataset.pm || null) === s.you.premove));
   }
 
   // ---- buy-in requests (host) -----------------------------------------
@@ -197,6 +220,18 @@
     $("nextBtn").onclick = () => PP.send({ type: "next_hand" });
     $("standBtn").onclick = () => { if (confirm("Stand up and cash out?")) PP.send({ type: "stand_up" }); };
 
+    $("awayBtn").onclick = () =>
+      PP.send({ type: "away", value: !PP.state.you.away });
+    $("acfBtn").onclick = () =>
+      PP.send({ type: "auto_check_fold", value: !PP.state.you.auto_check_fold });
+    document.querySelectorAll(".pm").forEach((b) =>
+      b.onclick = () => {
+        const mv = b.dataset.pm || null;
+        // Toggle off if you click the one that's already armed.
+        const cur = PP.state.you.premove;
+        PP.send({ type: "premove", move: (mv && mv === cur) ? null : mv });
+      });
+
     $("topupBtn").onclick = () => {
       $("topupAmount").value = PP.state.settings.default_buyin;
       show($("topupModal"), true);
@@ -241,6 +276,7 @@
 
   window.renderPanels = function (s) {
     renderControls(s);
+    renderPremove(s);
     renderRequests(s);
     renderTabs(s);
   };

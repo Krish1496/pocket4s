@@ -144,11 +144,22 @@
         </div>
       </div>
 
+      <!-- Pre-move bar: queue an action for when it's your turn -->
+      <div id="premoveBar" class="premove-bar hidden">
+        <span class="text-xs text-slate-400 mr-1">Pre-move:</span>
+        <button class="pm" data-pm="check">Check</button>
+        <button class="pm" data-pm="call">Call</button>
+        <button class="pm" data-pm="checkfold">Check/Fold</button>
+        <button class="pm pm-clear" data-pm="">Clear</button>
+      </div>
+
       <!-- Host / self controls -->
       <div id="controlBar" class="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button id="startBtn" class="btn-primary hidden">Start hand</button>
         <button id="nextBtn" class="btn-primary hidden">Next hand</button>
         <button id="topupBtn" class="btn-muted hidden">Add chips</button>
+        <button id="awayBtn" class="btn-muted hidden">Away</button>
+        <button id="acfBtn" class="btn-muted hidden">Check/Fold mode</button>
         <button id="standBtn" class="btn-muted hidden">Stand up</button>
         <p id="waitMsg" class="text-slate-400 text-sm w-full text-center"></p>
       </div>
@@ -183,7 +194,7 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=8"></script>
-  <script src="/static/panels.js?v=8"></script>
+  <script src="/static/poker.js?v=9"></script>
+  <script src="/static/panels.js?v=9"></script>
 </body>
 </html>

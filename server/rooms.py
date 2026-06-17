@@ -91,6 +91,7 @@ class Room:
             if left and left > 0:
                 return  # deadline got pushed; let the fresh timer handle it
             if self.game.auto_act_timeout():
+                self.game.auto_advance()
                 await self.broadcast()
 
     # --- auto-deal ------------------------------------------------------
@@ -120,6 +121,7 @@ class Room:
                     and g.hand_no == hand_no and len(g.seated_with_chips()) >= 2):
                 g.end_hand()
                 g.start_hand()
+                g.auto_advance()
                 await self.broadcast()
 
 

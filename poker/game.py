@@ -1,12 +1,8 @@
 """No-Limit Texas Hold'em table + hand engine.
 
-A single `Game` owns one table: its members, owner, seated players,
-buy-in flow, ledger, settings, and the live hand state machine. It is
-framework-agnostic -- it knows nothing about WebSockets or HTTP. Feed it
-actions, ask it for snapshots.
-
-Crowd-pleaser flavor (rabbit hunting, 7-2 bounty) lives in `extras.py`;
-money tracking in `ledger.py`; tunables in `settings.py`.
+A single `Game` owns one table: members, owner, seated players, buy-in
+flow, ledger, settings, and the live hand state machine. Framework-
+agnostic. Flavor lives in extras.py / autoplay.py; money in ledger.py.
 """
 from __future__ import annotations
 
@@ -20,6 +16,7 @@ from .evaluator import describe
 from .settings import TableSettings, SEAT_COUNT
 from .ledger import Ledger
 from . import extras
+from . import autoplay
 
 
 class Phase(str, Enum):
@@ -51,7 +48,6 @@ class Game:
 
         self.players: list[Player] = []        # seated players, sorted by seat
 
-        # Live hand state.
         self.phase = Phase.WAITING
         self.button = 0
         self._last_button_pid: str | None = None
@@ -66,12 +62,9 @@ class Game:
         self.last_results: dict | None = None
         self.hand_no = 0
 
-        # Turn clock: monotonic deadline + sequence so a stale auto-fold
-        # timer can tell whether the turn already moved on.
         self.turn_deadline: float | None = None
         self.turn_seq = 0
 
-        # Two separate feeds; chat entries are structured for per-speaker colour.
         self.hand_log: list[str] = []
         self.chat_log: list[dict] = []
         self._chat_n = 0
@@ -112,8 +105,7 @@ class Game:
         return [s for s in range(SEAT_COUNT) if not self.seat_taken(s)]
 
     def seated_with_chips(self) -> list[Player]:
-        # No `connected` check: a heartbeat reconnect blip must not block the
-        # next hand. Absent players are covered by the action timer.
+        # No `connected` check: a reconnect blip must not block the next hand.
         return [p for p in self.players if p.stack > 0]
 
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
@@ -254,7 +246,6 @@ class Game:
             p.connected = False
 
     def _reassign_owner(self) -> None:
-        # Prefer a seated player, else any remaining member, else nobody.
         if self.players:
             self.owner = self.players[0].id
         elif self.members:
@@ -396,6 +387,7 @@ class Game:
         p = self.get(pid)
         if not p or not p.can_act:
             raise ValueError("You cannot act")
+        p.premove = None                     # acting clears any queued pre-move
 
         to_call = self.current_bet - p.round_bet
         if action == "fold":
@@ -529,6 +521,18 @@ class Game:
         """On-demand rabbit hunt (click board / press H). Display only."""
         extras.reveal_rabbit(self)
 
+    def set_away(self, pid: str, value: bool) -> None:
+        autoplay.set_away(self, pid, value)
+
+    def set_auto_check_fold(self, pid: str, value: bool) -> None:
+        autoplay.set_auto_check_fold(self, pid, value)
+
+    def set_premove(self, pid: str, move: str | None) -> None:
+        autoplay.set_premove(self, pid, move)
+
+    def auto_advance(self) -> bool:
+        return autoplay.auto_advance(self)
+
     def end_hand(self) -> None:
         self.phase = Phase.WAITING
         self._set_to_act(None)
@@ -540,7 +544,6 @@ class Game:
             if p.status != Status.SITTING_OUT:
                 p.status = Status.SITTING_OUT
 
-    # -------------------------------------------------------------- helpers
     def pot_total(self) -> int:
         return sum(p.committed for p in self.players)
 

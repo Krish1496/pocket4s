@@ -132,10 +132,19 @@ async def _handle(room, pid: str, msg: dict) -> None:
                 g.chat(pid, text)
         elif t == "rabbit":
             g.reveal_rabbit(pid)
+        elif t == "premove":
+            g.set_premove(pid, msg.get("move"))
+        elif t == "away":
+            g.set_away(pid, bool(msg.get("value")))
+        elif t == "auto_check_fold":
+            g.set_auto_check_fold(pid, bool(msg.get("value")))
         elif t == "leave":
             g.remove_member(pid)
         elif t == "ping":
             pass
+        # Resolve any away players / pre-moves / auto check-fold now that the
+        # turn may have moved.
+        g.auto_advance()
     except ValueError as e:
         for ws in room.sockets.get(pid, set()):
             await ws.send_json({"type": "error", "message": str(e)})

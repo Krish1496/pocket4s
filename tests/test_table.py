@@ -264,3 +264,41 @@ def test_rabbit_hunt_blocked_when_setting_off():
     g.act(g.to_act, "fold")
     with pytest.raises(ValueError):
         g.reveal_rabbit("a")
+
+
+def test_away_player_is_sat_out_on_reset():
+    g = make_table()
+    _seat_two(g)
+    g.get("b").away = True
+    g.get("a").reset_for_hand()
+    g.get("b").reset_for_hand()
+    assert g.get("a").status.value == "active"
+    assert g.get("b").status.value == "sitting_out"
+
+
+def test_auto_check_fold_folds_facing_a_bet():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    actor = g.to_act                 # button/SB preflop, faces the BB
+    g.set_auto_check_fold(actor, True)
+    g.auto_advance()
+    assert g.phase.value == "showdown"  # auto-folded -> hand over
+
+
+def test_premove_call_fires_on_your_turn():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    actor = g.to_act
+    g.set_premove(actor, "call")
+    g.auto_advance()
+    assert g.get(actor).round_bet == g.current_bet  # called the blind
+    assert g.to_act != actor                        # turn moved on
+
+
+def test_bad_premove_is_rejected():
+    g = make_table()
+    _seat_two(g)
+    with pytest.raises(ValueError):
+        g.set_premove("a", "raise")

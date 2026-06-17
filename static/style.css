@@ -146,6 +146,27 @@
 .tab-btn { color: #94a3b8; }
 .tab-btn.active { color: #34d399; border-bottom: 2px solid #34d399; }
 
+/* Pre-move bar ---------------------------------------------------------- */
+.premove-bar {
+  margin: 0.75rem auto 0;
+  max-width: 640px;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 0.4rem;
+  background: #1e293b; border-radius: 0.6rem; padding: 0.5rem;
+  outline: 1px solid #334155;
+}
+.pm {
+  background: #334155; color: #e2e8f0;
+  border-radius: 0.4rem; padding: 0.45rem 0.8rem;
+  font-size: 0.85rem; font-weight: 600;
+}
+.pm:hover { background: #475569; }
+.pm.active { background: #f59e0b; color: #1e293b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.6); }
+.pm.pm-clear { background: transparent; color: #94a3b8; }
+.pm.pm-clear:hover { color: #e2e8f0; }
+.seat.away .pod { opacity: 0.55; }
+.away-tag { color: #fca5a5; font-size: 10px; font-weight: 700; }
+
 /* Slide-in drawer (Log / Chat / Ledger) --------------------------------- */
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0;

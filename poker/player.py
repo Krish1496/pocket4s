@@ -31,6 +31,13 @@ class Player:
         self.pending_topup = 0
         # Owner asked this player to sit out the next hand.
         self.sit_out_next = False
+        # Player toggled themselves 'away' -- sit out every hand until back.
+        self.away = False
+        # Persistent auto check/fold mode (acts the moment it's your turn).
+        self.auto_check_fold = False
+        # One-shot pre-move queued while it's not your turn:
+        # "check", "call", or "checkfold".
+        self.premove: str | None = None
 
     # --- helpers ---------------------------------------------------------
     def reset_for_hand(self) -> None:
@@ -42,10 +49,11 @@ class Player:
         self.committed = 0
         # Players with chips who aren't sitting out get dealt in -- even if
         # momentarily disconnected (the action timer covers absent players).
-        if self.stack > 0 and not self.sit_out_next:
+        if self.stack > 0 and not self.sit_out_next and not self.away:
             self.status = Status.ACTIVE
         else:
             self.status = Status.SITTING_OUT
+        self.premove = None
 
     def reset_for_street(self) -> None:
         self.round_bet = 0
