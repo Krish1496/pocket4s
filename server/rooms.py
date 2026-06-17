@@ -32,6 +32,7 @@ class Room:
     name: str = "Poker Table"
     sockets: dict[str, set[WebSocket]] = field(default_factory=dict)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    timer_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -59,6 +60,36 @@ class Room:
                     dead.append((pid, ws))
         for pid, ws in dead:
             self.disconnect(pid, ws)
+        self._arm_timer()
+
+    # --- action clock ---------------------------------------------------
+    def _arm_timer(self) -> None:
+        """(Re)schedule the auto-fold timer for the current actor. Safe to
+        call from inside the timer itself -- it won't cancel its own task."""
+        current = asyncio.current_task()
+        if (self.timer_task and self.timer_task is not current
+                and not self.timer_task.done()):
+            self.timer_task.cancel()
+        left = self.game.time_left()
+        if left is None:
+            self.timer_task = None
+            return
+        self.timer_task = asyncio.create_task(
+            self._run_timer(self.game.turn_seq, left))
+
+    async def _run_timer(self, seq: int, delay: float) -> None:
+        try:
+            await asyncio.sleep(delay + 0.25)  # tiny grace for network lag
+        except asyncio.CancelledError:
+            return
+        async with self.lock:
+            if self.game.turn_seq != seq:
+                return  # the turn already moved on; this timer is stale
+            left = self.game.time_left()
+            if left and left > 0:
+                return  # deadline got pushed; let the fresh timer handle it
+            if self.game.auto_act_timeout():
+                await self.broadcast()
 
 
 class RoomManager:

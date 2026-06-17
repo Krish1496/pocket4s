@@ -23,6 +23,7 @@ class TableSettings:
     rabbit_hunting: bool = True    # reveal the would-be board after a fold-out
     bounty_72: bool = False        # winning with 7-2 offsuit pays a bounty
     bounty_72_amount: int = 0      # chips each other player pays the winner
+    action_timeout: int = 30       # seconds to act before auto check/fold (0 = off)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -48,5 +49,6 @@ class TableSettings:
         self.default_buyin = min(max(self.min_buyin, self.default_buyin),
                                  self.max_buyin)
         self.bounty_72_amount = max(0, self.bounty_72_amount)
+        self.action_timeout = max(0, min(300, self.action_timeout))
         if self.bounty_72 and self.bounty_72_amount == 0:
             self.bounty_72_amount = self.big_blind * 5

@@ -101,7 +101,7 @@ function connect() {
   };
   PP.ws.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
-    if (data.type === "state") { PP.state = data; render(); }
+    if (data.type === "state") { PP.state = data; onStateTimer(); render(); }
     else if (data.type === "error") { toast(data.message); }
   };
 }
@@ -189,6 +189,13 @@ function seatEl(p, xPct, yPct) {
     b.textContent = "D";
     pod.append(b);
   }
+  // Live countdown ring on whoever must act.
+  if (p.is_turn && s.action_timeout > 0 && s.turn_seconds_left != null) {
+    const t = document.createElement("div");
+    t.className = "seat-timer";
+    t.textContent = Math.ceil(s.turn_seconds_left);
+    pod.append(t);
+  }
   // Host can edit any seated stack between hands.
   if (s.you.is_owner) {
     const edit = document.createElement("button");
@@ -231,29 +238,79 @@ function renderActionBar() {
   const myTurn = s.to_act === PP.pid && isBetting;
   const bar = $("actionBar");
   bar.classList.toggle("hidden", !myTurn);
-  if (!myTurn) return;
+  if (!myTurn) { PP.raiseBounds = null; return; }
 
   const callBtn = bar.querySelector('[data-act="call"]');
   const checkBtn = bar.querySelector('[data-act="check"]');
   checkBtn.classList.toggle("hidden", !you.can_check);
   callBtn.classList.toggle("hidden", you.can_check);
-  callBtn.textContent = `Call ${you.to_call}`;
+  callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call";
 
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
-  const myContribution = s.current_bet - you.to_call; // == my round_bet
-  const maxRaiseTo = myContribution + you.stack;
-  const slider = $("raiseSlider");
-  const amount = $("raiseAmount");
-  const raiseBtn = bar.querySelector('[data-act="raise"]');
+  const maxRaiseTo = (s.current_bet - you.to_call) + you.stack; // round_bet + stack
   const canRaise = minTo <= maxRaiseTo;
-  [slider, amount, raiseBtn].forEach((el) => el.classList.toggle("hidden", !canRaise));
+  PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
+  $("raiseTools").classList.toggle("hidden", !canRaise);
+  bar.querySelector('[data-act="raise"]').classList.toggle("hidden", !canRaise);
   if (canRaise) {
+    const slider = $("raiseSlider"), amount = $("raiseAmount");
     slider.min = minTo; slider.max = maxRaiseTo;
     if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) {
       slider.value = minTo; amount.value = minTo;
     }
-    raiseBtn.textContent = (you.to_call === 0) ? "Bet" : "Raise";
+    bar.querySelector('[data-act="raise"]').textContent =
+      (you.to_call === 0) ? "Bet" : "Raise";
   }
+  updateTimer();
+}
+
+// Quick-bet sizing. `kind` is min / half / twothirds / pot / allin.
+function quickRaiseTo(kind) {
+  const s = PP.state, you = s.you, b = PP.raiseBounds;
+  if (!b) return null;
+  const call = you.to_call;
+  const potAfterCall = s.pot + call;
+  let target;
+  if (kind === "min") target = b.min;
+  else if (kind === "allin") target = b.max;
+  else {
+    const frac = kind === "half" ? 0.5 : kind === "twothirds" ? 2 / 3 : 1;
+    target = s.current_bet + call + Math.round(frac * potAfterCall);
+  }
+  return Math.max(b.min, Math.min(b.max, target));
+}
+
+function setRaiseValue(v) {
+  if (v == null) return;
+  $("raiseSlider").value = v;
+  $("raiseAmount").value = v;
+}
+
+// --- action timer -------------------------------------------------------
+function onStateTimer() {
+  const s = PP.state;
+  if (s && s.turn_seconds_left != null && s.action_timeout > 0) {
+    PP.timer = { left: s.turn_seconds_left, total: s.action_timeout,
+                 at: performance.now() };
+  } else {
+    PP.timer = null;
+  }
+}
+
+function updateTimer() {
+  const wrap = $("timerWrap"), barEl = $("timerBar");
+  if (!PP.timer) { wrap.classList.add("hidden"); return; }
+  const elapsed = (performance.now() - PP.timer.at) / 1000;
+  const left = Math.max(0, PP.timer.left - elapsed);
+  const pct = Math.max(0, Math.min(100, (left / PP.timer.total) * 100));
+  const myTurn = PP.state && PP.state.to_act === PP.pid &&
+    !$("actionBar").classList.contains("hidden");
+  wrap.classList.toggle("hidden", !myTurn);
+  barEl.style.width = pct + "%";
+  barEl.style.background = left < 5 ? "#ef4444" : left < 10 ? "#f59e0b" : "#34d399";
+  // Per-seat countdown number on whoever is to act.
+  const seatTimer = document.querySelector(".seat.turn .seat-timer");
+  if (seatTimer) seatTimer.textContent = Math.ceil(left);
 }
 
 function renderResult() {
@@ -296,6 +353,18 @@ function wireCore() {
   $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
   $("raiseAmount").oninput = () => { $("raiseSlider").value = $("raiseAmount").value; };
 
+  // Quick-bet chips set the raise amount; All-in fires immediately.
+  document.querySelectorAll(".quick").forEach((btn) => {
+    btn.onclick = () => {
+      const v = quickRaiseTo(btn.dataset.quick);
+      if (v == null) return;
+      setRaiseValue(v);
+      if (btn.dataset.quick === "allin") {
+        send({ type: "action", action: "raise", amount: v });
+      }
+    };
+  });
+
   // Delegated clicks on the felt: sit on open seat, or host edit stack.
   $("felt").addEventListener("click", (e) => {
     const sit = e.target.closest("[data-sit-seat]");
@@ -310,6 +379,8 @@ function wireCore() {
   await loadTableInfo();
   wireCore();
   if (window.wirePanels) window.wirePanels();
+  // Smooth client-side countdown between server snapshots.
+  setInterval(updateTimer, 250);
   $("nameInput").value = PP.name;
   $("nameModal").classList.remove("hidden");
   $("nameInput").focus();

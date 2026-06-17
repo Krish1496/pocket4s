@@ -68,10 +68,16 @@
 
     const chat = $("chatMsgs");
     chat.innerHTML = "";
-    (s.chat_log || []).forEach((line) => {
+    (s.chat_log || []).forEach((m) => {
       const div = document.createElement("div");
-      div.className = "text-sky-300";
-      div.textContent = line;
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "font-semibold";
+      nameSpan.style.color = chatColor(m.id);
+      nameSpan.textContent = m.name + ": ";
+      const textSpan = document.createElement("span");
+      textSpan.className = "text-slate-200";
+      textSpan.textContent = m.text;
+      div.append(nameSpan, textSpan);
       chat.append(div);
     });
     $("tabChat").scrollTop = $("tabChat").scrollHeight;
@@ -144,6 +150,7 @@
     $("setAnte").value = g.ante; $("setDefault").value = g.default_buyin;
     $("setMin").value = g.min_buyin; $("setMax").value = g.max_buyin;
     $("setBountyAmt").value = g.bounty_72_amount;
+    $("setTimeout").value = g.action_timeout;
     $("setRabbit").checked = g.rabbit_hunting;
     $("setBounty").checked = g.bounty_72;
     $("setStraddle").checked = g.straddle;
@@ -185,6 +192,7 @@
         ante: +$("setAnte").value, default_buyin: +$("setDefault").value,
         min_buyin: +$("setMin").value, max_buyin: +$("setMax").value,
         bounty_72_amount: +$("setBountyAmt").value,
+        action_timeout: +$("setTimeout").value,
         rabbit_hunting: $("setRabbit").checked,
         bounty_72: $("setBounty").checked, straddle: $("setStraddle").checked,
       }});
@@ -206,6 +214,17 @@
   };
 
   // ---- tiny helpers ---------------------------------------------------
+  // Stable bright colour per player id, picked from a readable palette.
+  const CHAT_PALETTE = [
+    "#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399",
+    "#22d3ee", "#60a5fa", "#a78bfa", "#f472b6", "#e879f9",
+  ];
+  function chatColor(id) {
+    let h = 0;
+    const s = id || "";
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return CHAT_PALETTE[Math.abs(h) % CHAT_PALETTE.length];
+  }
   function show(el, on) { el.classList.toggle("hidden", !on); }
   function mkBtn(label, cls, onClick) {
     const b = document.createElement("button");

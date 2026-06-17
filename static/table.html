@@ -69,7 +69,8 @@
           <input id="setMax" type="number" class="inp mt-1" /></label>
         <label class="block">7-2 bounty amount
           <input id="setBountyAmt" type="number" class="inp mt-1" /></label>
-        <div></div>
+        <label class="block">Action timer (sec, 0=off)
+          <input id="setTimeout" type="number" class="inp mt-1" /></label>
         <label class="flex items-center gap-2 col-span-2">
           <input id="setRabbit" type="checkbox" class="accent-emerald-400" />
           Rabbit hunting (reveal the board after a fold-out)</label>
@@ -101,7 +102,7 @@
 
   <main class="max-w-6xl mx-auto p-3 lg:p-6 grid lg:grid-cols-[1fr_300px] gap-4">
     <section>
-      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 760px; height: 440px;">
+      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 760px; aspect-ratio: 1.7 / 1;">
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
           <div id="potLabel" class="text-sm font-bold text-amber-300 mb-2">Pot: 0</div>
           <div id="board" class="flex gap-2 justify-center"></div>
@@ -112,16 +113,26 @@
       </div>
 
       <!-- Action bar -->
-      <div id="actionBar" class="mt-4 bg-slate-800 rounded-xl p-3 ring-1 ring-slate-700 hidden">
-        <div class="flex flex-wrap items-center gap-2">
+      <div id="actionBar" class="action-bar hidden">
+        <div id="timerWrap" class="timer-wrap hidden"><div id="timerBar" class="timer-bar"></div></div>
+        <div id="raiseTools" class="raise-tools">
+          <div class="quick-row">
+            <button class="quick" data-quick="min">Min</button>
+            <button class="quick" data-quick="half">&frac12; Pot</button>
+            <button class="quick" data-quick="twothirds">&#8532; Pot</button>
+            <button class="quick" data-quick="pot">Pot</button>
+            <button class="quick" data-quick="allin">All-in</button>
+          </div>
+          <div class="raise-row">
+            <input id="raiseSlider" type="range" class="flex-1 accent-emerald-400" />
+            <input id="raiseAmount" type="number" class="raise-amount" />
+          </div>
+        </div>
+        <div class="main-row">
           <button data-act="fold" class="act-btn bg-rose-600 hover:bg-rose-500">Fold</button>
           <button data-act="check" class="act-btn bg-slate-600 hover:bg-slate-500">Check</button>
           <button data-act="call" class="act-btn bg-sky-600 hover:bg-sky-500">Call</button>
-          <div class="flex items-center gap-2 ml-auto">
-            <input id="raiseSlider" type="range" class="w-32 accent-emerald-400" />
-            <input id="raiseAmount" type="number" class="w-20 rounded bg-slate-900 border border-slate-600 px-2 py-1 text-sm" />
-            <button data-act="raise" class="act-btn bg-emerald-500 hover:bg-emerald-400 text-slate-900">Raise</button>
-          </div>
+          <button data-act="raise" class="act-btn bg-emerald-500 hover:bg-emerald-400 text-slate-900">Raise</button>
         </div>
       </div>
 

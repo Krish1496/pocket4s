@@ -10,6 +10,7 @@ money tracking in `ledger.py`; tunables in `settings.py`.
 """
 from __future__ import annotations
 
+import time
 from enum import Enum
 
 from .cards import Deck
@@ -67,9 +68,15 @@ class Game:
         self.last_results: dict | None = None
         self.hand_no = 0
 
-        # Two separate feeds, as requested.
+        # Turn clock: a monotonic deadline + a sequence number so a stale
+        # auto-fold timer can tell whether the turn already moved on.
+        self.turn_deadline: float | None = None
+        self.turn_seq = 0
+
+        # Two separate feeds, as requested. Chat entries are structured so
+        # the UI can colour each speaker consistently.
         self.hand_log: list[str] = []
-        self.chat_log: list[str] = []
+        self.chat_log: list[dict] = []
 
     # blinds read straight from settings so an owner edit takes effect next hand
     @property
@@ -84,7 +91,6 @@ class Game:
     def starting_stack(self) -> int:
         return self.settings.default_buyin
 
-    # =============================================================== members
     def register_member(self, pid: str, name: str) -> None:
         self.members[pid] = name
         self.ledger.record_name(pid, name)
@@ -111,7 +117,6 @@ class Game:
     def seated_with_chips(self) -> list[Player]:
         return [p for p in self.players if p.stack > 0 and p.connected]
 
-    # ============================================================ buy-in flow
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
         """Player asks to take a seat with a buy-in. Owner is auto-approved."""
         if self.get(pid):
@@ -178,7 +183,6 @@ class Game:
         self.settings.apply(**changes)
         self._log("Host updated table settings")
 
-    # --- buy-in helpers --------------------------------------------------
     def _clamp_buyin(self, amount: int) -> int:
         amount = int(amount)
         return max(self.settings.min_buyin, min(self.settings.max_buyin, amount))
@@ -227,7 +231,6 @@ class Game:
         if not self.is_owner(pid):
             raise ValueError("Only the host can do that")
 
-    # ============================================================ leaving
     def stand_up(self, pid: str) -> None:
         """Player gives up their seat. Their stack is cashed to the ledger."""
         p = self.get(pid)
@@ -262,7 +265,6 @@ class Game:
         if self.owner:
             self._log(f"{self.members.get(self.owner, 'Player')} is now the host")
 
-    # ============================================================ hands
     def can_start(self) -> bool:
         return self.phase == Phase.WAITING and len(self.seated_with_chips()) >= 2
 
@@ -372,7 +374,7 @@ class Game:
             for p in self.players:
                 p.reset_for_street()
             first = self._next_in_hand(self.button)
-        self.to_act = self._first_actor(first)
+        self._set_to_act(self._first_actor(first))
         if self.to_act is None:
             self._maybe_advance_street()
 
@@ -450,7 +452,7 @@ class Game:
         else:
             nxt_idx = next(i for i, p in enumerate(self.players)
                            if p.id == self.to_act)
-            self.to_act = self._first_actor(nxt_idx + 1)
+            self._set_to_act(self._first_actor(nxt_idx + 1))
             if self.to_act is None:
                 self._maybe_advance_street()
 
@@ -503,7 +505,7 @@ class Game:
 
     def _showdown(self) -> None:
         self.phase = Phase.SHOWDOWN
-        self.to_act = None
+        self._set_to_act(None)
         self.last_results = settle(self.players, self.board)
         for r in self.last_results["pots"]:
             names = ", ".join(self.get(w).name for w in r["winners"])
@@ -514,7 +516,7 @@ class Game:
         pot = sum(p.committed for p in self.players)
         winner.stack += pot
         self.phase = Phase.SHOWDOWN
-        self.to_act = None
+        self._set_to_act(None)
         self.last_results = {"pots": [{
             "pot": 0, "amount": pot, "winners": [winner.id],
             "amount_each": pot, "score": None,
@@ -532,7 +534,7 @@ class Game:
 
     def end_hand(self) -> None:
         self.phase = Phase.WAITING
-        self.to_act = None
+        self._set_to_act(None)
         self.rabbit_board = []
         for p in self.players:
             p.hole = []
@@ -554,8 +556,39 @@ class Game:
 
     def chat(self, pid: str, text: str) -> None:
         name = self.members.get(pid, "Player")
-        self.chat_log.append(f"{name}: {text}")
+        self.chat_log.append({"id": pid, "name": name, "text": text})
         self.chat_log = self.chat_log[-100:]
+
+    # ------------------------------------------------------------ turn clock
+    def _set_to_act(self, pid: str | None) -> None:
+        """Central place to change whose turn it is, so the action clock and
+        the turn sequence stay in lockstep."""
+        self.to_act = pid
+        self.turn_seq += 1
+        timeout = self.settings.action_timeout
+        if pid is not None and timeout > 0:
+            self.turn_deadline = time.monotonic() + timeout
+        else:
+            self.turn_deadline = None
+
+    def time_left(self) -> float | None:
+        """Seconds remaining for the current actor (None if no clock)."""
+        if self.turn_deadline is None:
+            return None
+        return max(0.0, self.turn_deadline - time.monotonic())
+
+    def auto_act_timeout(self) -> bool:
+        """Time's up: auto-check if possible, otherwise fold. Returns True if
+        an action was actually taken."""
+        pid = self.to_act
+        p = self.get(pid) if pid else None
+        if not p or not p.can_act:
+            return False
+        to_call = self.current_bet - p.round_bet
+        action = "check" if to_call <= 0 else "fold"
+        self._log(f"{p.name} timed out ({action})")
+        self.act(pid, action)
+        return True
 
     # back-compat convenience used by unit tests: register + auto-seat
     def add_player(self, pid: str, name: str) -> Player:

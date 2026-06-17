@@ -138,3 +138,67 @@ def test_settings_update_owner_only():
     assert g.settings.rabbit_hunting is False
     with pytest.raises(ValueError):
         g.owner_set_settings("b", big_blind=999)
+
+
+def _seat_two(g):
+    for pid, name in [("a", "Alice"), ("b", "Bob")]:
+        g.register_member(pid, name)
+    g.request_sit("a", 0, 200)
+    g.request_sit("b", 1, 200)
+    g.approve_request("a", "b")
+
+
+def test_chat_is_structured_for_colouring():
+    g = make_table()
+    g.register_member("a", "Alice")
+    g.chat("a", "nice hand")
+    assert g.chat_log[-1] == {"id": "a", "name": "Alice", "text": "nice hand"}
+
+
+def test_turn_clock_set_and_cleared():
+    g = make_table(action_timeout=30)
+    _seat_two(g)
+    g.start_hand()
+    assert g.to_act is not None
+    assert g.time_left() is not None and g.time_left() > 0
+    seq_before = g.turn_seq
+    g.act(g.to_act, "fold")  # ends heads-up hand -> showdown
+    assert g.turn_seq > seq_before
+    assert g.time_left() is None  # clock cleared at showdown
+
+
+def test_timeout_disabled_means_no_clock():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    assert g.time_left() is None
+
+
+def test_auto_act_folds_when_facing_bet():
+    g = make_table(action_timeout=30)
+    _seat_two(g)
+    g.start_hand()
+    # Heads-up preflop: button/SB faces the BB, so timing out should FOLD.
+    actor = g.to_act
+    assert g.auto_act_timeout() is True
+    assert g.get(actor).status.value == "folded"
+
+
+def test_room_timer_auto_acts_after_deadline():
+    """Integration: the Room's async clock auto-acts when time runs out."""
+    import asyncio
+    from server.rooms import Room
+
+    g = make_table(action_timeout=1)
+    _seat_two(g)
+    room = Room(table_id="t", game=g)
+
+    async def run():
+        g.start_hand()
+        actor = g.to_act
+        room._arm_timer()
+        await asyncio.sleep(1.8)  # let the 1s clock + grace elapse
+        return actor
+
+    actor = asyncio.run(run())
+    assert g.get(actor).status.value == "folded"
