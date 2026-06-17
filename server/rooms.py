@@ -33,6 +33,7 @@ class Room:
     sockets: dict[str, set[WebSocket]] = field(default_factory=dict)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     timer_task: asyncio.Task | None = field(default=None)
+    autodeal_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -61,6 +62,7 @@ class Room:
         for pid, ws in dead:
             self.disconnect(pid, ws)
         self._arm_timer()
+        self._arm_autodeal()
 
     # --- action clock ---------------------------------------------------
     def _arm_timer(self) -> None:
@@ -89,6 +91,35 @@ class Room:
             if left and left > 0:
                 return  # deadline got pushed; let the fresh timer handle it
             if self.game.auto_act_timeout():
+                await self.broadcast()
+
+    # --- auto-deal ------------------------------------------------------
+    AUTODEAL_DELAY = 4.5  # seconds to admire the result before the next hand
+
+    def _arm_autodeal(self) -> None:
+        """If auto-deal is on and we're at showdown, schedule the next hand."""
+        g = self.game
+        ready = (g.settings.auto_deal and g.phase.value == "showdown"
+                 and len(g.seated_with_chips()) >= 2)
+        if not ready:
+            return
+        if asyncio.current_task() is self.autodeal_task:
+            return  # called from inside the running task; let it finish
+        if self.autodeal_task and not self.autodeal_task.done():
+            return  # already scheduled for this showdown
+        self.autodeal_task = asyncio.create_task(self._run_autodeal(g.hand_no))
+
+    async def _run_autodeal(self, hand_no: int) -> None:
+        try:
+            await asyncio.sleep(self.AUTODEAL_DELAY)
+        except asyncio.CancelledError:
+            return
+        async with self.lock:
+            g = self.game
+            if (g.settings.auto_deal and g.phase.value == "showdown"
+                    and g.hand_no == hand_no and len(g.seated_with_chips()) >= 2):
+                g.end_hand()
+                g.start_hand()
                 await self.broadcast()
 
 

@@ -77,6 +77,7 @@ class Game:
         # the UI can colour each speaker consistently.
         self.hand_log: list[str] = []
         self.chat_log: list[dict] = []
+        self._chat_n = 0
 
     # blinds read straight from settings so an owner edit takes effect next hand
     @property
@@ -357,7 +358,6 @@ class Game:
             if p.in_hand:
                 p.hole = self.deck.deal(2)
 
-    # ------------------------------------------------------------ betting
     def _begin_betting(self, preflop: bool) -> None:
         self._acted = set()
         if preflop:
@@ -467,7 +467,6 @@ class Game:
                 return False
         return True
 
-    # --------------------------------------------------------- street flow
     def _maybe_advance_street(self) -> None:
         if len(self._active_actors()) <= 1 and self._everyone_matched():
             self._run_out_and_showdown()
@@ -556,10 +555,11 @@ class Game:
 
     def chat(self, pid: str, text: str) -> None:
         name = self.members.get(pid, "Player")
-        self.chat_log.append({"id": pid, "name": name, "text": text})
+        self._chat_n += 1
+        self.chat_log.append({"n": self._chat_n, "id": pid,
+                              "name": name, "text": text})
         self.chat_log = self.chat_log[-100:]
 
-    # ------------------------------------------------------------ turn clock
     def _set_to_act(self, pid: str | None) -> None:
         """Central place to change whose turn it is, so the action clock and
         the turn sequence stay in lockstep."""

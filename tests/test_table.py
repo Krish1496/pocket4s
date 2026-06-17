@@ -152,7 +152,10 @@ def test_chat_is_structured_for_colouring():
     g = make_table()
     g.register_member("a", "Alice")
     g.chat("a", "nice hand")
-    assert g.chat_log[-1] == {"id": "a", "name": "Alice", "text": "nice hand"}
+    entry = g.chat_log[-1]
+    assert entry["id"] == "a" and entry["name"] == "Alice"
+    assert entry["text"] == "nice hand"
+    assert entry["n"] >= 1  # monotonic id so the client can spot new msgs
 
 
 def test_turn_clock_set_and_cleared():
@@ -202,3 +205,27 @@ def test_room_timer_auto_acts_after_deadline():
 
     actor = asyncio.run(run())
     assert g.get(actor).status.value == "folded"
+
+
+def test_room_auto_deal_starts_next_hand():
+    """With auto-deal on, the room deals the next hand after showdown."""
+    import asyncio
+    from server.rooms import Room
+
+    g = make_table(auto_deal=True, action_timeout=0)
+    _seat_two(g)
+    room = Room(table_id="t", game=g)
+    room.AUTODEAL_DELAY = 0.3  # speed up for the test
+
+    async def run():
+        g.start_hand()
+        h1 = g.hand_no
+        g.act(g.to_act, "fold")  # heads-up fold -> showdown
+        assert g.phase.value == "showdown"
+        room._arm_autodeal()
+        await asyncio.sleep(0.7)
+        return h1
+
+    h1 = asyncio.run(run())
+    assert g.hand_no == h1 + 1
+    assert g.phase.value == "preflop"

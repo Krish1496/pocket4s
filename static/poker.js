@@ -117,7 +117,7 @@ function connect() {
 
   PP.ws.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
-    if (data.type === "state") { PP.state = data; onStateTimer(); render(); }
+    if (data.type === "state") { PP.state = data; onStateTimer(); onStateChat(); render(); }
     else if (data.type === "error") { toast(data.message); }
   };
 }
@@ -253,6 +253,15 @@ function seatEl(p, xPct, yPct) {
     bet.textContent = p.round_bet;
     wrap.append(bet);
   }
+  // Transient chat bubble above this seat.
+  const bubble = PP.bubbles && PP.bubbles[p.id];
+  if (bubble && performance.now() < bubble.until) {
+    const b = document.createElement("div");
+    b.className = "chat-bubble";
+    b.dataset.until = bubble.until;
+    b.textContent = bubble.text;
+    wrap.append(b);
+  }
   return wrap;
 }
 
@@ -325,6 +334,37 @@ function setRaiseValue(v) {
   if (v == null) return;
   $("raiseSlider").value = v;
   $("raiseAmount").value = v;
+}
+
+// --- chat bubbles -------------------------------------------------------
+// Pop the newest chat line above the speaker's seat for a few seconds.
+const BUBBLE_MS = 5000;
+function onStateChat() {
+  const log = (PP.state && PP.state.chat_log) || [];
+  if (PP.lastChatN === undefined) {
+    // First snapshot: don't pop historical messages, just remember the max.
+    PP.lastChatN = log.reduce((m, x) => Math.max(m, x.n || 0), 0);
+    return;
+  }
+  PP.bubbles = PP.bubbles || {};
+  log.forEach((m) => {
+    if ((m.n || 0) > PP.lastChatN) {
+      PP.bubbles[m.id] = { text: m.text, until: performance.now() + BUBBLE_MS };
+      PP.lastChatN = m.n;
+    }
+  });
+}
+
+function pruneBubbles() {
+  const now = performance.now();
+  document.querySelectorAll(".chat-bubble").forEach((el) => {
+    if (+el.dataset.until < now) el.remove();
+  });
+  if (PP.bubbles) {
+    for (const pid in PP.bubbles) {
+      if (PP.bubbles[pid].until < now) delete PP.bubbles[pid];
+    }
+  }
 }
 
 // --- action timer -------------------------------------------------------
@@ -421,7 +461,7 @@ function wireCore() {
   wireCore();
   if (window.wirePanels) window.wirePanels();
   // Smooth client-side countdown between server snapshots.
-  setInterval(updateTimer, 250);
+  setInterval(() => { updateTimer(); pruneBubbles(); }, 250);
   $("nameInput").value = PP.name;
   $("nameModal").classList.remove("hidden");
   $("nameInput").focus();

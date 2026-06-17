@@ -172,6 +172,7 @@
     $("setRabbit").checked = g.rabbit_hunting;
     $("setBounty").checked = g.bounty_72;
     $("setStraddle").checked = g.straddle;
+    $("setAutoDeal").checked = g.auto_deal;
   }
 
   // ---- wiring ---------------------------------------------------------
@@ -221,6 +222,7 @@
         action_timeout: +$("setTimeout").value,
         rabbit_hunting: $("setRabbit").checked,
         bounty_72: $("setBounty").checked, straddle: $("setStraddle").checked,
+        auto_deal: $("setAutoDeal").checked,
       }});
       show($("settingsModal"), false);
     };

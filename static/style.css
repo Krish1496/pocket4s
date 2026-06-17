@@ -204,7 +204,44 @@
   text-align: center; font-weight: 700;
 }
 .main-row { display: flex; gap: 0.5rem; }
-.main-row .act-btn { flex: 1; }
+.main-row .act-btn { flex: 1; font-size: 1.1rem; padding: 0.7rem 0.5rem; }
+.raise-amount { font-size: 1.05rem; }
+
+/* Pot readout -- nice and chunky so it's readable across the table. */
+.pot-label {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #fcd34d;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.5px;
+}
+
+/* Bet chips on each seat -- a touch larger too. */
+.seat .bet-chip { font-size: 13px; font-weight: 700; }
+
+/* Transient chat bubble above a player's seat. */
+.chat-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f8fafc; color: #0f172a;
+  font-size: 12px; font-weight: 600;
+  padding: 5px 9px; border-radius: 10px;
+  max-width: 150px; width: max-content;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  z-index: 6; pointer-events: none;
+  animation: bubble-pop 0.18s ease-out;
+}
+.chat-bubble::after {
+  content: ""; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #f8fafc;
+}
+@keyframes bubble-pop {
+  from { transform: translateX(-50%) scale(0.7); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
 
 .seat-timer {
   position: absolute; top: -10px; left: -8px;
@@ -241,4 +278,5 @@
   }
   .main-row .act-btn { padding: 0.75rem 0.4rem; font-size: 0.95rem; }
   .quick { padding: 0.55rem 0.2rem; }
+  .pot-label { font-size: 1.25rem; }
 }
