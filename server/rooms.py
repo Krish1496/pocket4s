@@ -36,6 +36,7 @@ class Room:
     timer_task: asyncio.Task | None = field(default=None)
     autodeal_task: asyncio.Task | None = field(default=None)
     autoplay_task: asyncio.Task | None = field(default=None)
+    runout_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -66,6 +67,7 @@ class Room:
         self._arm_timer()
         self._arm_autodeal()
         self._arm_autoplay()
+        self._arm_runout()
 
     # --- action clock ---------------------------------------------------
     def _arm_timer(self) -> None:
@@ -122,6 +124,34 @@ class Room:
                 return  # turn moved (or paused) -- this step is stale
             if autoplay.step(g):
                 await self.broadcast()
+
+    # --- paced all-in runout (flop ... turn ... river, one street at a time)
+    RUNOUT_DELAY = 2.5  # seconds between each board reveal
+
+    def _arm_runout(self) -> None:
+        g = self.game
+        if g.paused or g.runout is None:
+            return
+        if asyncio.current_task() is self.runout_task:
+            return
+        if self.runout_task and not self.runout_task.done():
+            return
+        self.runout_task = asyncio.create_task(self._run_runout(g.hand_no))
+
+    async def _run_runout(self, hand_no: int) -> None:
+        while True:
+            try:
+                await asyncio.sleep(self.RUNOUT_DELAY)
+            except asyncio.CancelledError:
+                return
+            async with self.lock:
+                g = self.game
+                if g.paused or g.hand_no != hand_no or g.runout is None:
+                    return  # paused, new hand, or already finished
+                g.reveal_runout_step()
+                await self.broadcast()
+                if g.runout is None:
+                    return  # last street revealed -> showdown
 
     # --- auto-deal ------------------------------------------------------
     AUTODEAL_DELAY = 4.5  # seconds to admire the result before the next hand

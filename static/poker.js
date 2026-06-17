@@ -197,6 +197,7 @@ function computeAnims(s) {
   const newHand = s.hand_no !== PP.prevHandNo;
   if (newHand) { PP.prevBoardLen = 0; }
   a.boardFrom = PP.prevBoardLen || 0;
+  if (s.board.length < (PP.prevBoardLen || 0)) a.boardFrom = 0;  // next run: deal a fresh flop
   a.dealHoles = newHand && s.phase === "preflop";
   a.flipReveal = s.phase === "showdown" && PP.prevPhase !== "showdown";
   a.potBump = s.pot > (PP.prevPot || 0);

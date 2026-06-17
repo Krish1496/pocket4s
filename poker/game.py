@@ -52,6 +52,7 @@ class Game:
         self.rabbit_board: list = []
         self.run_boards: list = []          # one full board per run (RIT)
         self.run_vote: dict | None = None   # active run-it-twice vote, if any
+        self.runout: dict | None = None     # paced all-in reveal in progress
         self.current_bet = 0
         self.min_raise = self.bb
         self.to_act: str | None = None
@@ -259,6 +260,8 @@ class Game:
         self.rabbit_board = []
         self.run_boards = []
         self.run_vote = None
+        self.runout = None
+        self.runout = None
         self.current_bet = 0
         self.min_raise = self.bb
         self._acted = set()
@@ -452,10 +455,12 @@ class Game:
 
     def _maybe_advance_street(self) -> None:
         if len(self._active_actors()) <= 1 and self._everyone_matched():
-            if runs.should_offer(self):
+            if len(self.board) >= 5:
+                self._showdown()
+            elif runs.should_offer(self):
                 runs.offer(self)
             else:
-                self._run_out_and_showdown()
+                runs.begin_runout(self, 1)   # non-RIT: still paced
             return
         self._next_street()
 
@@ -478,15 +483,10 @@ class Game:
             self.board += self.deck.deal(3)
         elif self.phase in (Phase.TURN, Phase.RIVER):
             self.board += self.deck.deal(1)
-        self._log(f"{self.phase.value.title()}: "
-                  + " ".join(c.code for c in self.board))
+        self._log(f"{self.phase.value.title()}: " + " ".join(c.code for c in self.board))
 
-    def _run_out_and_showdown(self) -> None:
-        while len(self.board) < 5:
-            self.deck.deal_one()  # burn
-            self.board += self.deck.deal(1)
-        self._log("Run it out: " + " ".join(c.code for c in self.board))
-        self._showdown()
+    def reveal_runout_step(self) -> bool:
+        return runs.reveal_step(self)   # room calls this on a timer
 
     def _showdown(self) -> None:
         self.last_results = settle(self.players, self.board)

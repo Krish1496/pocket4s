@@ -366,11 +366,14 @@ def test_run_it_twice_offered_on_all_in():
 
 
 def test_run_it_twice_uses_minimum_vote_and_conserves_chips():
+    from poker import runs
     g = make_table(action_timeout=0, run_it_twice=True)
     _seat_two(g)
     _drive_all_in_heads_up(g)
     g.set_run_vote("a", 3)
     g.set_run_vote("b", 2)                    # minimum (2) wins
+    assert g.runout is not None               # board reveals are paced
+    runs.finish_runout(g)                     # fast-forward the animation
     assert g.phase == Phase.SHOWDOWN
     assert g.last_results["run_count"] == 2
     assert len(g.run_boards) == 2
@@ -378,9 +381,48 @@ def test_run_it_twice_uses_minimum_vote_and_conserves_chips():
     assert sum(p.stack for p in g.players) == 400   # every chip paid back
 
 
+def test_runout_reveals_one_street_at_a_time():
+    from poker import runs
+    g = make_table(action_timeout=0, run_it_twice=False)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)                 # all-in preflop, no RIT
+    assert g.runout is not None
+    assert len(g.board) == 3                  # flop shown first
+    assert g.reveal_runout_step() is True
+    assert len(g.board) == 4                  # then the turn
+    assert g.reveal_runout_step() is True
+    assert len(g.board) == 5                  # then the river
+    assert g.reveal_runout_step() is False    # done -> showdown
+    assert g.phase == Phase.SHOWDOWN
+    assert len(g.board) == 5
+
+
 def test_no_run_it_twice_when_disabled():
+    from poker import runs
     g = make_table(action_timeout=0, run_it_twice=False)
     _seat_two(g)
     _drive_all_in_heads_up(g)
     assert g.run_vote is None
+    runs.finish_runout(g)
     assert g.phase == Phase.SHOWDOWN          # ran out once, normally
+
+
+def test_room_paces_the_runout_one_street_at_a_time():
+    """Integration: the room reveals the board over time, not instantly."""
+    import asyncio
+    from server.rooms import Room
+
+    g = make_table(action_timeout=0, run_it_twice=False)
+    _seat_two(g)
+    room = Room(table_id="t", game=g)
+    room.RUNOUT_DELAY = 0.2  # speed up for the test
+
+    async def run():
+        _drive_all_in_heads_up(g)            # all-in preflop -> paced runout
+        assert len(g.board) == 3             # flop is up immediately
+        room._arm_runout()
+        await asyncio.sleep(0.3)
+        return len(g.board)
+
+    after_one = asyncio.run(run())
+    assert after_one == 4                     # one street revealed on the timer

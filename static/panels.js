@@ -339,14 +339,19 @@
     }
   };
 
-  // Stacked boards when the hand was run more than once.
+  // Stacked boards: completed runs (during the live runout) + winners (showdown).
   window.renderRuns = function () {
     const s = PP.state;
     const row = $("runsRow");
     row.innerHTML = "";
-    const runs = s.results && s.results.runs;
-    if (!(s.phase === "showdown" && runs && runs.length > 1)) return;
-    runs.forEach((run, i) => {
+    if (!(s.run_count > 1)) return;
+    const showdownRuns = s.phase === "showdown" && s.results && s.results.runs;
+    // Source of truth: at showdown use results.runs (with winners); while
+    // running out, show whatever completed boards we have so far.
+    const list = showdownRuns
+      ? s.results.runs
+      : (s.run_boards || []).map((b) => ({ board: b, pots: null }));
+    list.forEach((run, i) => {
       const line = document.createElement("div");
       line.className = "run-line";
       const lbl = document.createElement("span");
@@ -354,13 +359,22 @@
       lbl.textContent = "Run " + (i + 1);
       line.append(lbl);
       run.board.forEach((c) => line.append(cardEl(c, true)));
-      const win = document.createElement("span");
-      win.className = "run-win";
-      win.textContent = run.pots.map((p) =>
-        `${p.winner_names.join(", ")}${p.hand_name ? " (" + p.hand_name + ")" : ""}`).join(" / ");
-      line.append(win);
+      if (run.pots) {
+        const win = document.createElement("span");
+        win.className = "run-win";
+        win.textContent = run.pots.map((p) =>
+          `${p.winner_names.join(", ")}${p.hand_name ? " (" + p.hand_name + ")" : ""}`).join(" / ");
+        line.append(win);
+      }
       row.append(line);
     });
+    // While running out, the current run is being dealt on the main board.
+    if (!showdownRuns && (s.run_boards || []).length < s.run_count) {
+      const tag = document.createElement("div");
+      tag.className = "run-current";
+      tag.textContent = `Running it ${s.run_count}\u00d7 \u2014 run ${(s.run_boards || []).length + 1} of ${s.run_count}\u2026`;
+      row.append(tag);
+    }
   };
 
   // Keyboard shortcuts: C call, K check, R raise/X check-fold, F fold, H rabbit,

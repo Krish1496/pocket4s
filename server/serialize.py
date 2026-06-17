@@ -30,7 +30,8 @@ def _hand_name(g: Game, p) -> str | None:
 def _player_view(g: Game, p, viewer_id: str) -> dict:
     show = (p.id == viewer_id
             or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole)
-            or (g.run_vote and p.in_hand and p.hole))   # cards up while voting
+            or (g.run_vote and p.in_hand and p.hole)     # cards up while voting
+            or (g.runout and p.in_hand and p.hole))      # ...and during the runout
     return {
         "id": p.id,
         "name": p.name,
@@ -94,6 +95,10 @@ def snapshot(g: Game, viewer_id: str) -> dict:
         "board": [c.code for c in g.board],
         "rabbit": [c.code for c in g.rabbit_board],
         "run_vote": run_vote,
+        "running_out": g.runout is not None,
+        "run_boards": [[c.code for c in b] for b in g.run_boards],
+        "run_count": (g.runout["n"] if g.runout else
+                      (g.last_results.get("run_count", 1) if g.last_results else 1)),
         "pot": g.pot_total(),
         "current_bet": g.current_bet,
         "settings": g.settings.to_dict(),
