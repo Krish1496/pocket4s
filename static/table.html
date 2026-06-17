@@ -75,6 +75,9 @@
           <input id="setRabbit" type="checkbox" class="accent-emerald-400" />
           Rabbit hunting (reveal the board after a fold-out)</label>
         <label class="flex items-center gap-2 col-span-2">
+          <input id="setRunTwice" type="checkbox" class="accent-emerald-400" />
+          Run it twice (all-in? players run the board 1-5&times;)</label>
+        <label class="flex items-center gap-2 col-span-2">
           <input id="setBounty" type="checkbox" class="accent-emerald-400" />
           7-2 offsuit bounty</label>
         <label class="flex items-center gap-2 col-span-2">
@@ -117,11 +120,15 @@
           <div id="potLabel" class="pot-label mb-2">Pot: 0</div>
           <div id="board" class="flex gap-2 justify-center"></div>
           <div id="rabbitRow" class="flex gap-2 justify-center mt-2 opacity-60"></div>
+          <div id="runsRow" class="runs-row"></div>
           <div id="phaseLabel" class="mt-2 text-xs uppercase tracking-widest text-slate-300"></div>
           <div id="rabbitHint" class="mt-1 text-xs text-amber-300 hidden">&#x1F407; Click the cards or press H to rabbit-hunt</div>
           <div id="resultBanner" class="mt-2 text-sm font-bold text-emerald-300"></div>
         </div>
       </div>
+
+      <!-- Run-it-twice vote bar -->
+      <div id="runVoteBar" class="runvote-bar hidden"></div>
 
       <!-- Action bar -->
       <div id="actionBar" class="action-bar hidden">
@@ -198,7 +205,7 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=11"></script>
-  <script src="/static/panels.js?v=11"></script>
+  <script src="/static/poker.js?v=12"></script>
+  <script src="/static/panels.js?v=12"></script>
 </body>
 </html>

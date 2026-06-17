@@ -142,6 +142,8 @@ async def _handle(room, pid: str, msg: dict) -> None:
             g.set_auto_check_fold(pid, bool(msg.get("value")))
         elif t == "pause":
             g.set_paused(pid, bool(msg.get("value")))
+        elif t == "run_vote":
+            g.set_run_vote(pid, int(msg.get("times", 1)))
         elif t == "leave":
             g.remove_member(pid)
         elif t == "ping":

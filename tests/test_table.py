@@ -346,3 +346,41 @@ def test_hand_name_appears_in_snapshot_for_your_own_cards():
     snap = snapshot(g, "a")
     me = next(p for p in snap["players"] if p["id"] == "a")
     assert me["hand_name"] is not None
+
+
+def _drive_all_in_heads_up(g):
+    """Both players jam preflop -> the hand is now all-in with cards to come."""
+    g.start_hand()
+    actor = g.get(g.to_act)
+    g.act(actor.id, "raise", actor.round_bet + actor.stack)   # shove
+    g.act(g.to_act, "call")                                   # call it off
+
+
+def test_run_it_twice_offered_on_all_in():
+    g = make_table(action_timeout=0, run_it_twice=True)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    assert g.run_vote is not None
+    assert g.phase != Phase.SHOWDOWN          # paused for the vote
+    assert set(g.run_vote["votes"]) == {"a", "b"}
+
+
+def test_run_it_twice_uses_minimum_vote_and_conserves_chips():
+    g = make_table(action_timeout=0, run_it_twice=True)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    g.set_run_vote("a", 3)
+    g.set_run_vote("b", 2)                    # minimum (2) wins
+    assert g.phase == Phase.SHOWDOWN
+    assert g.last_results["run_count"] == 2
+    assert len(g.run_boards) == 2
+    assert all(len(b) == 5 for b in g.run_boards)
+    assert sum(p.stack for p in g.players) == 400   # every chip paid back
+
+
+def test_no_run_it_twice_when_disabled():
+    g = make_table(action_timeout=0, run_it_twice=False)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    assert g.run_vote is None
+    assert g.phase == Phase.SHOWDOWN          # ran out once, normally

@@ -228,6 +228,7 @@
     $("setBountyAmt").value = g.bounty_72_amount;
     $("setTimeout").value = g.action_timeout;
     $("setRabbit").checked = g.rabbit_hunting;
+    $("setRunTwice").checked = g.run_it_twice;
     $("setBounty").checked = g.bounty_72;
     $("setStraddle").checked = g.straddle;
     $("setAutoDeal").checked = g.auto_deal;
@@ -300,6 +301,7 @@
         bounty_72_amount: +$("setBountyAmt").value,
         action_timeout: +$("setTimeout").value,
         rabbit_hunting: $("setRabbit").checked,
+      run_it_twice: $("setRunTwice").checked,
         bounty_72: $("setBounty").checked, straddle: $("setStraddle").checked,
         auto_deal: $("setAutoDeal").checked,
       }});
@@ -313,6 +315,53 @@
     };
   }
   window.wirePanels = wirePanels;
+
+  // Run-it-twice vote bar: pick how many times to run the all-in board.
+  window.renderRunVote = function () {
+    const s = PP.state;
+    const bar = $("runVoteBar");
+    const rv = s.run_vote;
+    if (!rv) { bar.classList.add("hidden"); return; }
+    bar.classList.remove("hidden");
+    const tally = rv.voters.map((v) =>
+      `${escapeHtml(v.name)}: ${v.vote == null ? "\u2026" : v.vote + "\u00d7"}`).join("  \u2022  ");
+    if (rv.your_turn) {
+      let btns = "";
+      for (let i = 1; i <= rv.max; i++) btns += `<button class="rv" data-times="${i}">${i}\u00d7</button>`;
+      bar.innerHTML = `<div class="rv-title">\u2665 All in! How many times to run the board?</div>` +
+        `<div class="rv-row">${btns}</div><div class="rv-tally">${tally}</div>`;
+      bar.querySelectorAll(".rv").forEach((b) =>
+        b.onclick = () => PP.send({ type: "run_vote", times: +b.dataset.times }));
+    } else {
+      const mine = rv.your_vote ? ` (you: ${rv.your_vote}\u00d7)` : "";
+      bar.innerHTML = `<div class="rv-title">Waiting for everyone to choose\u2026${mine}</div>` +
+        `<div class="rv-tally">${tally}</div>`;
+    }
+  };
+
+  // Stacked boards when the hand was run more than once.
+  window.renderRuns = function () {
+    const s = PP.state;
+    const row = $("runsRow");
+    row.innerHTML = "";
+    const runs = s.results && s.results.runs;
+    if (!(s.phase === "showdown" && runs && runs.length > 1)) return;
+    runs.forEach((run, i) => {
+      const line = document.createElement("div");
+      line.className = "run-line";
+      const lbl = document.createElement("span");
+      lbl.className = "run-label";
+      lbl.textContent = "Run " + (i + 1);
+      line.append(lbl);
+      run.board.forEach((c) => line.append(cardEl(c, true)));
+      const win = document.createElement("span");
+      win.className = "run-win";
+      win.textContent = run.pots.map((p) =>
+        `${p.winner_names.join(", ")}${p.hand_name ? " (" + p.hand_name + ")" : ""}`).join(" / ");
+      line.append(win);
+      row.append(line);
+    });
+  };
 
   // Keyboard shortcuts: C call, K check, R raise/X check-fold, F fold, H rabbit,
   // M chat. On your turn -> live actions; while waiting -> pre-moves.

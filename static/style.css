@@ -156,6 +156,26 @@ body {
 .tab-btn { color: #94a3b8; }
 .tab-btn.active { color: #34d399; border-bottom: 2px solid #34d399; }
 
+/* Run-it-twice vote bar + stacked run boards ---------------------------- */
+.runvote-bar {
+  margin: 0.75rem auto 0; max-width: 560px; text-align: center;
+  background: #1e293b; border: 1px solid #f59e0b; border-radius: 0.7rem;
+  padding: 0.7rem;
+}
+.runvote-bar .rv-title { font-size: 0.9rem; font-weight: 800; color: #fde68a; margin-bottom: 0.5rem; }
+.runvote-bar .rv-row { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 0.4rem; }
+.runvote-bar .rv {
+  background: #334155; color: #e2e8f0; font-weight: 900; font-size: 1.05rem;
+  width: 46px; height: 46px; border-radius: 0.5rem;
+}
+.runvote-bar .rv:hover { background: #f59e0b; color: #1e293b; }
+.runvote-bar .rv-tally { font-size: 0.72rem; color: #94a3b8; }
+
+.runs-row { display: flex; flex-direction: column; gap: 4px; align-items: center; margin-top: 6px; }
+.run-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.run-label { font-size: 10px; font-weight: 800; color: #cbd5e1; width: 42px; text-align: right; }
+.run-win { font-size: 11px; font-weight: 700; color: #6ee7b7; margin-left: 6px; }
+
 /* Pre-move bar ---------------------------------------------------------- */
 .premove-bar {
   margin: 0.75rem auto 0;

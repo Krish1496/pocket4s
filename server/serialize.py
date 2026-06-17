@@ -12,6 +12,12 @@ from poker.evaluator import describe, describe_detail, best_hand
 from poker.settings import SEAT_COUNT
 
 
+def _pot_view(g: Game, r: dict) -> dict:
+    return {**r,
+            "winner_names": [g.get(w).name for w in r["winners"] if g.get(w)],
+            "hand_name": describe(r["score"]) if r.get("score") else None}
+
+
 def _hand_name(g: Game, p) -> str | None:
     if not p.hole or len(g.board) < 3:
         return None
@@ -23,7 +29,8 @@ def _hand_name(g: Game, p) -> str | None:
 
 def _player_view(g: Game, p, viewer_id: str) -> dict:
     show = (p.id == viewer_id
-            or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole))
+            or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole)
+            or (g.run_vote and p.in_hand and p.hole))   # cards up while voting
     return {
         "id": p.id,
         "name": p.name,
@@ -54,11 +61,24 @@ def snapshot(g: Game, viewer_id: str) -> dict:
 
     results = None
     if g.last_results:
-        results = {"pots": [{
-            **r,
-            "winner_names": [g.get(w).name for w in r["winners"] if g.get(w)],
-            "hand_name": describe(r["score"]) if r.get("score") else None,
-        } for r in g.last_results["pots"]]}
+        results = {"pots": [_pot_view(g, r) for r in g.last_results["pots"]]}
+        if g.last_results.get("runs"):
+            results["run_count"] = g.last_results.get("run_count", 1)
+            results["runs"] = [
+                {"board": run["board"],
+                 "pots": [_pot_view(g, rp) for rp in run["pots"]]}
+                for run in g.last_results["runs"]]
+
+    run_vote = None
+    if g.run_vote:
+        rv = g.run_vote
+        run_vote = {
+            "max": rv["max"],
+            "your_turn": rv["votes"].get(viewer_id) is None and viewer_id in rv["votes"],
+            "your_vote": rv["votes"].get(viewer_id),
+            "voters": [{"name": g.get(pid).name if g.get(pid) else "?",
+                        "vote": rv["votes"][pid]} for pid in rv["voters"]],
+        }
 
     # Owner sees the full request queue; others only see their own request.
     if is_owner:
@@ -73,6 +93,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
         "hand_no": g.hand_no,
         "board": [c.code for c in g.board],
         "rabbit": [c.code for c in g.rabbit_board],
+        "run_vote": run_vote,
         "pot": g.pot_total(),
         "current_bet": g.current_bet,
         "settings": g.settings.to_dict(),

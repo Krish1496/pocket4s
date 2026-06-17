@@ -183,8 +183,10 @@ function render() {
     ` \u2022 buy-in ${s.settings.min_buyin}-${s.settings.max_buyin}`;
 
   renderBoard();
+  if (window.renderRuns) window.renderRuns();
   renderSeats();
   renderActionBar();
+  if (window.renderRunVote) window.renderRunVote();
   renderResult();
   if (window.renderPanels) window.renderPanels(s);
 }
@@ -497,7 +499,9 @@ function renderResult() {
   const s = PP.state;
   const banner = $("resultBanner");
   if (s.phase === "showdown" && s.results) {
-    banner.textContent = s.results.pots.map((r) => {
+    const rc = s.results.run_count;
+    const head = rc && rc > 1 ? `Ran it ${rc}\u00d7 \u2014 ` : "";
+    banner.textContent = head + s.results.pots.map((r) => {
       const hand = r.hand_name ? ` with ${r.hand_name}` : "";
       return `${r.winner_names.join(", ")} wins ${r.amount}${hand}`;
     }).join(" \u2022 ");
@@ -505,6 +509,8 @@ function renderResult() {
     banner.textContent = "";
   }
 }
+
+// Run-it-twice vote bar + stacked run boards live in panels.js.
 
 function wireCore() {
   $("joinBtn").onclick = () => {

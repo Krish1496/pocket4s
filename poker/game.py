@@ -1,9 +1,4 @@
-"""No-Limit Texas Hold'em table + hand engine.
-
-A single `Game` owns one table (members, owner, seats, buy-ins, ledger,
-settings, live hand state) and is framework-agnostic. Flavor lives in
-extras.py / autoplay.py; money in ledger.py.
-"""
+"""NLHE table + hand engine. Framework-agnostic Game; flavor in extras/autoplay/runs, money in ledger."""
 from __future__ import annotations
 
 import time
@@ -17,6 +12,7 @@ from .settings import TableSettings, SEAT_COUNT
 from .ledger import Ledger
 from . import extras
 from . import autoplay
+from . import runs
 
 
 class Phase(str, Enum):
@@ -45,7 +41,6 @@ class Game:
         self.owner: str | None = None
         self.ledger = Ledger()
         self.requests: list[dict] = []          # pending buy-in/top-up requests
-
         self.players: list[Player] = []        # seated players, sorted by seat
 
         self.phase = Phase.WAITING
@@ -55,6 +50,8 @@ class Game:
         self.deck: Deck | None = None
         self.board: list = []
         self.rabbit_board: list = []
+        self.run_boards: list = []          # one full board per run (RIT)
+        self.run_vote: dict | None = None   # active run-it-twice vote, if any
         self.current_bet = 0
         self.min_raise = self.bb
         self.to_act: str | None = None
@@ -109,7 +106,6 @@ class Game:
         return [p for p in self.players if p.stack > 0]  # no `connected` check (blip-safe)
 
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
-        """Player asks to take a seat with a buy-in. Owner is auto-approved."""
         if self.get(pid):
             raise ValueError("You are already seated")
         if seat < 0 or seat >= SEAT_COUNT:
@@ -124,7 +120,6 @@ class Game:
             self._queue_request(pid, "sit", amount, seat)
 
     def request_topup(self, pid: str, amount: int) -> None:
-        """Seated player asks to add chips. Lands at the start of next hand."""
         p = self.get(pid)
         if not p:
             raise ValueError("Sit down before topping up")
@@ -155,7 +150,6 @@ class Game:
             self._log(f"Host declined {name}'s buy-in request")
 
     def owner_set_stack(self, owner_pid: str, target_pid: str, amount: int) -> None:
-        """Owner sets a player's stack; the delta hits the ledger as a buy-in."""
         self._require_owner(owner_pid)
         p = self.get(target_pid)
         if not p:
@@ -222,7 +216,6 @@ class Game:
             raise ValueError("Only the host can do that")
 
     def stand_up(self, pid: str) -> None:
-        """Player gives up their seat. Their stack is cashed to the ledger."""
         p = self.get(pid)
         if not p:
             return
@@ -264,6 +257,8 @@ class Game:
         self.deck = Deck(seed=self._seed)
         self.board = []
         self.rabbit_board = []
+        self.run_boards = []
+        self.run_vote = None
         self.current_bet = 0
         self.min_raise = self.bb
         self._acted = set()
@@ -378,7 +373,6 @@ class Game:
         return [p for p in self.players if p.can_act]
 
     def act(self, pid: str, action: str, amount: int = 0) -> None:
-        """Apply a player action. Raises ValueError if illegal."""
         if self.phase not in (Phase.PREFLOP, Phase.FLOP, Phase.TURN, Phase.RIVER):
             raise ValueError("No betting is open right now")
         if self.to_act != pid:
@@ -458,7 +452,10 @@ class Game:
 
     def _maybe_advance_street(self) -> None:
         if len(self._active_actors()) <= 1 and self._everyone_matched():
-            self._run_out_and_showdown()
+            if runs.should_offer(self):
+                runs.offer(self)
+            else:
+                self._run_out_and_showdown()
             return
         self._next_street()
 
@@ -492,25 +489,29 @@ class Game:
         self._showdown()
 
     def _showdown(self) -> None:
-        self.phase = Phase.SHOWDOWN
-        self._set_to_act(None)
         self.last_results = settle(self.players, self.board)
         for r in self.last_results["pots"]:
             names = ", ".join(self.get(w).name for w in r["winners"])
             self._log(f"{names} wins {r['amount']} with {describe(r['score'])}")
+        self._finish_showdown()
+
+    def _finish_showdown(self) -> None:
+        self.phase = Phase.SHOWDOWN
+        self._set_to_act(None)
         self._post_hand_extras()
+
+    def set_run_vote(self, pid: str, times: int) -> None:
+        runs.vote(self, pid, times)
 
     def _award_uncontested(self, winner: Player) -> None:
         pot = sum(p.committed for p in self.players)
         winner.stack += pot
-        self.phase = Phase.SHOWDOWN
-        self._set_to_act(None)
         self.last_results = {"pots": [{
             "pot": 0, "amount": pot, "winners": [winner.id],
             "amount_each": pot, "score": None,
         }]}
         self._log(f"{winner.name} wins {pot} (everyone folded)")
-        self._post_hand_extras()
+        self._finish_showdown()
 
     def _post_hand_extras(self) -> None:
         for line in extras.apply_72_bounty(self):
@@ -539,6 +540,8 @@ class Game:
         self.phase = Phase.WAITING
         self._set_to_act(None)
         self.rabbit_board = []
+        self.run_boards = []
+        self.run_vote = None
         for p in self.players:
             p.hole = []
             p.round_bet = 0
@@ -564,7 +567,6 @@ class Game:
         self.chat_log = self.chat_log[-100:]
 
     def _set_to_act(self, pid: str | None) -> None:
-        """Central place to change whose turn it is (keeps the clock in sync)."""
         self.to_act = pid
         self.turn_seq += 1
         timeout = self.settings.action_timeout
@@ -574,13 +576,11 @@ class Game:
             self.turn_deadline = None
 
     def time_left(self) -> float | None:
-        """Seconds remaining for the current actor (None if no clock)."""
         if self.turn_deadline is None:
             return None
         return max(0.0, self.turn_deadline - time.monotonic())
 
     def auto_act_timeout(self) -> bool:
-        """Time's up: auto-check if possible, else fold. True if it acted."""
         pid = self.to_act
         p = self.get(pid) if pid else None
         if not p or not p.can_act:
