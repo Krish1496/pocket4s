@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puppy Poker - Table</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+
+  <!-- Name prompt modal -->
+  <div id="nameModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm ring-1 ring-slate-700">
+      <h2 class="text-xl font-bold mb-2">Join the table</h2>
+      <p class="text-slate-400 text-sm mb-4">Pick a name your friends will recognize.</p>
+      <label for="nameInput" class="sr-only">Display name</label>
+      <input id="nameInput" type="text" maxlength="20" placeholder="Your name"
+             class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+      <button id="joinBtn"
+              class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 rounded-lg">
+        Sit down
+      </button>
+    </div>
+  </div>
+
+  <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+    <div>
+      <h1 class="font-bold text-lg" id="tableName">Poker Table</h1>
+      <p class="text-xs text-slate-400" id="blindsInfo"></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="connDot" class="text-xs text-slate-400">connecting...</span>
+      <button id="shareBtn" class="bg-slate-700 hover:bg-slate-600 text-sm font-semibold py-1.5 px-3 rounded-lg">
+        Copy invite link
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-3 lg:p-6 grid lg:grid-cols-[1fr_280px] gap-4">
+    <!-- Table area -->
+    <section>
+      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 720px; height: 420px;">
+        <!-- center: pot + board -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
+          <div id="potLabel" class="text-sm font-bold text-amber-300 mb-2">Pot: 0</div>
+          <div id="board" class="flex gap-2 justify-center"></div>
+          <div id="phaseLabel" class="mt-2 text-xs uppercase tracking-widest text-slate-300"></div>
+          <div id="resultBanner" class="mt-2 text-sm font-bold text-emerald-300"></div>
+        </div>
+        <!-- seats injected here -->
+      </div>
+
+      <!-- Action bar -->
+      <div id="actionBar" class="mt-4 bg-slate-800 rounded-xl p-3 ring-1 ring-slate-700 hidden">
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-act="fold" class="act-btn bg-rose-600 hover:bg-rose-500">Fold</button>
+          <button data-act="check" class="act-btn bg-slate-600 hover:bg-slate-500">Check</button>
+          <button data-act="call" class="act-btn bg-sky-600 hover:bg-sky-500">Call</button>
+          <div class="flex items-center gap-2 ml-auto">
+            <input id="raiseSlider" type="range" class="w-32 accent-emerald-400" />
+            <input id="raiseAmount" type="number" class="w-20 rounded bg-slate-900 border border-slate-600 px-2 py-1 text-sm" />
+            <button data-act="raise" class="act-btn bg-emerald-500 hover:bg-emerald-400 text-slate-900">Raise</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Host / start controls -->
+      <div id="startBar" class="mt-4 text-center hidden">
+        <button id="startBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 px-6 rounded-lg">
+          Start hand
+        </button>
+        <button id="nextBtn" class="hidden bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 px-6 rounded-lg">
+          Next hand
+        </button>
+        <p id="waitMsg" class="text-slate-400 text-sm mt-2"></p>
+      </div>
+    </section>
+
+    <!-- Side panel: log + chat -->
+    <aside class="bg-slate-800 rounded-xl ring-1 ring-slate-700 flex flex-col h-[420px]">
+      <h2 class="px-3 py-2 border-b border-slate-700 font-semibold text-sm">Table feed</h2>
+      <div id="log" class="flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300"></div>
+      <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2">
+        <label for="chatInput" class="sr-only">Chat message</label>
+        <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
+               class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button class="bg-slate-600 hover:bg-slate-500 px-3 rounded text-sm font-semibold">Send</button>
+      </form>
+    </aside>
+  </main>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
+
+  <style>
+    .act-btn { font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 0.5rem; }
+    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  </style>
+  <script src="/static/poker.js"></script>
+</body>
+</html>

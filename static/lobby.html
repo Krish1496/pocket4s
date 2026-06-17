@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puppy Poker - Lobby</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
+  <main class="w-full max-w-md">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-black tracking-tight">
+        <span class="text-emerald-400">Puppy</span> Poker
+      </h1>
+      <p class="text-slate-400 mt-2">No-Limit Texas Hold'em. Make a table, share the link, play with friends anywhere.</p>
+    </header>
+
+    <section class="bg-slate-800 rounded-2xl p-6 shadow-xl ring-1 ring-slate-700">
+      <h2 class="text-lg font-semibold mb-4">Create a table</h2>
+      <form method="post" action="/create" class="space-y-4">
+        <div>
+          <label for="table_name" class="block text-sm font-medium text-slate-300 mb-1">Table name</label>
+          <input id="table_name" name="table_name" type="text" value="Poker Night"
+                 class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label for="small_blind" class="block text-sm font-medium text-slate-300 mb-1">Small blind</label>
+            <input id="small_blind" name="small_blind" type="number" min="1" value="1"
+                   class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+          <div>
+            <label for="big_blind" class="block text-sm font-medium text-slate-300 mb-1">Big blind</label>
+            <input id="big_blind" name="big_blind" type="number" min="2" value="2"
+                   class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+          <div>
+            <label for="stack" class="block text-sm font-medium text-slate-300 mb-1">Stack</label>
+            <input id="stack" name="stack" type="number" min="20" value="200"
+                   class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+        </div>
+        <button type="submit"
+                class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-lg transition">
+          Deal me in
+        </button>
+      </form>
+    </section>
+
+    <p class="text-center text-slate-500 text-sm mt-6">
+      Got a table link from a friend? Just open it. Chips only, no real money.
+    </p>
+  </main>
+</body>
+</html>

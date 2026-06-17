@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Env / secrets
+.env
+*.log
+
+# OS
+.DS_Store
