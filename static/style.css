@@ -101,3 +101,47 @@
   display: inline-block; width: 8px; height: 8px; border-radius: 999px;
   background: #ef4444; margin-left: 4px;
 }
+
+/* Empty / open seats ----------------------------------------------------- */
+.seat.open .pod {
+  background: rgba(15, 23, 42, 0.6);
+  border-style: dashed;
+  border-color: #475569;
+  cursor: pointer;
+}
+.seat.open .pod:hover { border-color: #34d399; color: #34d399; }
+
+/* Modals ----------------------------------------------------------------- */
+.modal-wrap {
+  position: fixed; inset: 0; z-index: 50; padding: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: #1e293b; border-radius: 1rem; padding: 1.5rem;
+  width: 100%; max-width: 24rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  outline: 1px solid #334155;
+}
+
+/* Reusable controls ------------------------------------------------------ */
+.inp {
+  width: 100%; border-radius: 0.5rem; background: #0f172a;
+  border: 1px solid #475569; padding: 0.5rem 0.75rem; color: #f1f5f9;
+}
+.inp:focus { outline: none; box-shadow: 0 0 0 2px #34d399; }
+.btn-primary {
+  background: #10b981; color: #0f172a; font-weight: 700;
+  padding: 0.6rem 1.25rem; border-radius: 0.5rem;
+}
+.btn-primary:hover { background: #34d399; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-muted {
+  background: #334155; color: #e2e8f0; font-weight: 600;
+  padding: 0.5rem 0.9rem; border-radius: 0.5rem;
+}
+.btn-muted:hover { background: #475569; }
+.act-btn { font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 0.5rem; }
+.act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tab-btn { color: #94a3b8; }
+.tab-btn.active { color: #34d399; border-bottom: 2px solid #34d399; }

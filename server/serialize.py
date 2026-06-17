@@ -1,21 +1,20 @@
 """Turn game state into JSON snapshots for the browser.
 
-Crucial rule: a player only ever sees their OWN hole cards until
-showdown. Everyone's cards are revealed once the hand reaches showdown
-(among players still in the hand). This is built per-viewer.
+Rules:
+- A player only sees their OWN hole cards until showdown (then all live
+  hands reveal).
+- Only the host sees the pending buy-in request queue + host controls.
 """
 from __future__ import annotations
 
 from poker.game import Game, Phase
 from poker.evaluator import describe
-from poker.player import Status
+from poker.settings import SEAT_COUNT
 
 
 def _player_view(g: Game, p, viewer_id: str) -> dict:
-    show_cards = (
-        p.id == viewer_id
-        or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole)
-    )
+    show = (p.id == viewer_id
+            or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole))
     return {
         "id": p.id,
         "name": p.name,
@@ -25,17 +24,19 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
         "committed": p.committed,
         "status": p.status.value,
         "connected": p.connected,
+        "pending_topup": p.pending_topup,
         "is_button": g.players.index(p) == g.button if g.players else False,
         "is_turn": g.to_act == p.id,
-        "hole": [c.code for c in p.hole] if show_cards else (
+        "is_owner": g.owner == p.id,
+        "hole": [c.code for c in p.hole] if show else (
             ["back", "back"] if p.in_hand and p.hole else []),
     }
 
 
 def snapshot(g: Game, viewer_id: str) -> dict:
     viewer = g.get(viewer_id)
-    to_call = 0
-    min_raise_to = 0
+    is_owner = g.is_owner(viewer_id)
+    to_call = min_raise_to = 0
     if viewer and g.to_act == viewer_id:
         to_call = max(0, g.current_bet - viewer.round_bet)
         min_raise_to = g.current_bet + g.min_raise
@@ -48,19 +49,33 @@ def snapshot(g: Game, viewer_id: str) -> dict:
             "hand_name": describe(r["score"]) if r.get("score") else None,
         } for r in g.last_results["pots"]]}
 
+    # Owner sees the full request queue; others only see their own request.
+    if is_owner:
+        requests = g.requests
+    else:
+        requests = [r for r in g.requests if r["id"] == viewer_id]
+
     return {
         "type": "state",
         "phase": g.phase.value,
         "hand_no": g.hand_no,
         "board": [c.code for c in g.board],
+        "rabbit": [c.code for c in g.rabbit_board],
         "pot": g.pot_total(),
         "current_bet": g.current_bet,
-        "blinds": {"sb": g.sb, "bb": g.bb},
+        "settings": g.settings.to_dict(),
         "to_act": g.to_act,
-        "button_seat": g.players[g.button].seat if g.players else None,
+        "seat_count": SEAT_COUNT,
+        "open_seats": g.open_seats(),
+        "owner": g.owner,
         "players": [_player_view(g, p, viewer_id) for p in g.players],
+        "requests": requests,
+        "ledger": g.ledger.rows(g.live_stacks()),
         "you": {
             "id": viewer_id,
+            "seated": viewer is not None,
+            "is_owner": is_owner,
+            "seat": viewer.seat if viewer else None,
             "to_call": to_call,
             "min_raise_to": min_raise_to,
             "can_check": viewer is not None and g.to_act == viewer_id and to_call == 0,
@@ -68,6 +83,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
             "in_hand": viewer.in_hand if viewer else False,
         },
         "can_start": g.can_start(),
-        "log": g.log[-25:],
+        "hand_log": g.hand_log[-40:],
+        "chat_log": g.chat_log[-40:],
         "results": results,
     }

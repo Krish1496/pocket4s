@@ -10,17 +10,80 @@
 <body class="min-h-screen bg-slate-900 text-slate-100">
 
   <!-- Name prompt modal -->
-  <div id="nameModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm ring-1 ring-slate-700">
+  <div id="nameModal" class="modal-wrap">
+    <div class="modal-card">
       <h2 class="text-xl font-bold mb-2">Join the table</h2>
-      <p class="text-slate-400 text-sm mb-4">Pick a name your friends will recognize.</p>
+      <p class="text-slate-400 text-sm mb-4">Pick a name your friends will recognize. You'll choose a seat and buy-in next.</p>
       <label for="nameInput" class="sr-only">Display name</label>
       <input id="nameInput" type="text" maxlength="20" placeholder="Your name"
-             class="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-      <button id="joinBtn"
-              class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 rounded-lg">
-        Sit down
-      </button>
+             class="inp mb-4" />
+      <button id="joinBtn" class="btn-primary w-full">Enter room</button>
+    </div>
+  </div>
+
+  <!-- Buy-in / sit modal -->
+  <div id="sitModal" class="modal-wrap hidden">
+    <div class="modal-card">
+      <h2 class="text-xl font-bold mb-1">Take seat <span id="sitSeatNo"></span></h2>
+      <p id="sitHint" class="text-slate-400 text-sm mb-4"></p>
+      <label for="sitAmount" class="block text-sm font-medium text-slate-300 mb-1">Buy-in amount</label>
+      <input id="sitAmount" type="number" class="inp mb-2" />
+      <input id="sitSlider" type="range" class="w-full accent-emerald-400 mb-4" />
+      <div class="flex gap-2">
+        <button id="sitCancel" class="btn-muted flex-1">Cancel</button>
+        <button id="sitConfirm" class="btn-primary flex-1">Request buy-in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top-up modal -->
+  <div id="topupModal" class="modal-wrap hidden">
+    <div class="modal-card">
+      <h2 class="text-xl font-bold mb-1">Add chips</h2>
+      <p class="text-slate-400 text-sm mb-4">Top-ups apply at the start of the next hand. Non-hosts need host approval.</p>
+      <label for="topupAmount" class="block text-sm font-medium text-slate-300 mb-1">Amount</label>
+      <input id="topupAmount" type="number" class="inp mb-4" />
+      <div class="flex gap-2">
+        <button id="topupCancel" class="btn-muted flex-1">Cancel</button>
+        <button id="topupConfirm" class="btn-primary flex-1">Request top-up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal (host only) -->
+  <div id="settingsModal" class="modal-wrap hidden">
+    <div class="modal-card max-w-md">
+      <h2 class="text-xl font-bold mb-4">Table settings (host)</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <label class="block">Small blind
+          <input id="setSb" type="number" class="inp mt-1" /></label>
+        <label class="block">Big blind
+          <input id="setBb" type="number" class="inp mt-1" /></label>
+        <label class="block">Ante
+          <input id="setAnte" type="number" class="inp mt-1" /></label>
+        <label class="block">Default buy-in
+          <input id="setDefault" type="number" class="inp mt-1" /></label>
+        <label class="block">Min buy-in
+          <input id="setMin" type="number" class="inp mt-1" /></label>
+        <label class="block">Max buy-in
+          <input id="setMax" type="number" class="inp mt-1" /></label>
+        <label class="block">7-2 bounty amount
+          <input id="setBountyAmt" type="number" class="inp mt-1" /></label>
+        <div></div>
+        <label class="flex items-center gap-2 col-span-2">
+          <input id="setRabbit" type="checkbox" class="accent-emerald-400" />
+          Rabbit hunting (reveal the board after a fold-out)</label>
+        <label class="flex items-center gap-2 col-span-2">
+          <input id="setBounty" type="checkbox" class="accent-emerald-400" />
+          7-2 offsuit bounty</label>
+        <label class="flex items-center gap-2 col-span-2">
+          <input id="setStraddle" type="checkbox" class="accent-emerald-400" />
+          UTG straddle</label>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button id="settingsCancel" class="btn-muted flex-1">Close</button>
+        <button id="settingsSave" class="btn-primary flex-1">Save settings</button>
+      </div>
     </div>
   </div>
 
@@ -31,24 +94,21 @@
     </div>
     <div class="flex items-center gap-2">
       <span id="connDot" class="text-xs text-slate-400">connecting...</span>
-      <button id="shareBtn" class="bg-slate-700 hover:bg-slate-600 text-sm font-semibold py-1.5 px-3 rounded-lg">
-        Copy invite link
-      </button>
+      <button id="settingsBtn" class="btn-muted text-sm hidden">Settings</button>
+      <button id="shareBtn" class="btn-muted text-sm">Copy invite link</button>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto p-3 lg:p-6 grid lg:grid-cols-[1fr_280px] gap-4">
-    <!-- Table area -->
+  <main class="max-w-6xl mx-auto p-3 lg:p-6 grid lg:grid-cols-[1fr_300px] gap-4">
     <section>
-      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 720px; height: 420px;">
-        <!-- center: pot + board -->
+      <div id="felt" class="felt mx-auto relative" style="width: 100%; max-width: 760px; height: 440px;">
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
           <div id="potLabel" class="text-sm font-bold text-amber-300 mb-2">Pot: 0</div>
           <div id="board" class="flex gap-2 justify-center"></div>
+          <div id="rabbitRow" class="flex gap-2 justify-center mt-2 opacity-60"></div>
           <div id="phaseLabel" class="mt-2 text-xs uppercase tracking-widest text-slate-300"></div>
           <div id="resultBanner" class="mt-2 text-sm font-bold text-emerald-300"></div>
         </div>
-        <!-- seats injected here -->
       </div>
 
       <!-- Action bar -->
@@ -65,37 +125,49 @@
         </div>
       </div>
 
-      <!-- Host / start controls -->
-      <div id="startBar" class="mt-4 text-center hidden">
-        <button id="startBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 px-6 rounded-lg">
-          Start hand
-        </button>
-        <button id="nextBtn" class="hidden bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2.5 px-6 rounded-lg">
-          Next hand
-        </button>
-        <p id="waitMsg" class="text-slate-400 text-sm mt-2"></p>
+      <!-- Host / self controls -->
+      <div id="controlBar" class="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <button id="startBtn" class="btn-primary hidden">Start hand</button>
+        <button id="nextBtn" class="btn-primary hidden">Next hand</button>
+        <button id="topupBtn" class="btn-muted hidden">Add chips</button>
+        <button id="standBtn" class="btn-muted hidden">Stand up</button>
+        <p id="waitMsg" class="text-slate-400 text-sm w-full text-center"></p>
       </div>
     </section>
 
-    <!-- Side panel: log + chat -->
-    <aside class="bg-slate-800 rounded-xl ring-1 ring-slate-700 flex flex-col h-[420px]">
-      <h2 class="px-3 py-2 border-b border-slate-700 font-semibold text-sm">Table feed</h2>
-      <div id="log" class="flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300"></div>
-      <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2">
-        <label for="chatInput" class="sr-only">Chat message</label>
-        <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
-               class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <button class="bg-slate-600 hover:bg-slate-500 px-3 rounded text-sm font-semibold">Send</button>
-      </form>
+    <!-- Side panel -->
+    <aside class="flex flex-col gap-4">
+      <!-- Buy-in requests (host) -->
+      <div id="requestsPanel" class="bg-slate-800 rounded-xl ring-1 ring-amber-600/50 p-3 hidden">
+        <h2 class="font-semibold text-sm mb-2 text-amber-300">Buy-in requests</h2>
+        <div id="requestsList" class="space-y-2"></div>
+      </div>
+
+      <!-- Tabbed panel: Hand log / Chat / Ledger -->
+      <div class="bg-slate-800 rounded-xl ring-1 ring-slate-700 flex flex-col h-[420px]">
+        <div class="flex border-b border-slate-700 text-sm">
+          <button data-tab="hand" class="tab-btn flex-1 py-2 font-semibold">Hand log</button>
+          <button data-tab="chat" class="tab-btn flex-1 py-2 font-semibold">Chat</button>
+          <button data-tab="ledger" class="tab-btn flex-1 py-2 font-semibold">Ledger</button>
+        </div>
+        <div id="tabHand" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300"></div>
+        <div id="tabChat" class="tab-pane flex-1 overflow-y-auto p-3 space-y-1 text-sm text-slate-300 hidden flex-col">
+          <div id="chatMsgs" class="flex-1 space-y-1"></div>
+        </div>
+        <div id="tabLedger" class="tab-pane flex-1 overflow-y-auto p-3 text-sm hidden"></div>
+        <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2">
+          <label for="chatInput" class="sr-only">Chat message</label>
+          <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
+                 class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          <button class="btn-muted text-sm">Send</button>
+        </form>
+      </div>
     </aside>
   </main>
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <style>
-    .act-btn { font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 0.5rem; }
-    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  </style>
   <script src="/static/poker.js"></script>
+  <script src="/static/panels.js"></script>
 </body>
 </html>

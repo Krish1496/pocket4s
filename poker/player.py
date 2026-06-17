@@ -26,14 +26,22 @@ class Player:
         # Total chips committed across the whole hand (drives side pots).
         self.committed = 0
         self.connected = True
+        # Chips waiting to be added to the stack at the start of the next hand
+        # (you can request a top-up mid-hand, but it only lands between hands).
+        self.pending_topup = 0
+        # Owner asked this player to sit out the next hand.
+        self.sit_out_next = False
 
     # --- helpers ---------------------------------------------------------
     def reset_for_hand(self) -> None:
+        if self.pending_topup:
+            self.stack += self.pending_topup
+            self.pending_topup = 0
         self.hole = []
         self.round_bet = 0
         self.committed = 0
-        # Players with chips who are present get dealt in.
-        if self.stack > 0 and self.connected:
+        # Players with chips who are present (and not sitting out) get dealt in.
+        if self.stack > 0 and self.connected and not self.sit_out_next:
             self.status = Status.ACTIVE
         else:
             self.status = Status.SITTING_OUT
@@ -55,6 +63,17 @@ class Player:
         amount = min(amount, self.stack)
         self.stack -= amount
         self.round_bet += amount
+        self.committed += amount
+        if self.stack == 0:
+            self.status = Status.ALL_IN
+        return amount
+
+    def post_ante(self, amount: int) -> int:
+        """Put an ante into the pot. Counts toward `committed` (so side pots
+        are right) but NOT `round_bet` -- antes are dead money, not a bet to
+        call."""
+        amount = min(amount, self.stack)
+        self.stack -= amount
         self.committed += amount
         if self.stack == 0:
             self.status = Status.ALL_IN

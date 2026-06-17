@@ -1,11 +1,11 @@
-// Puppy Poker - client. Talks to the server over a WebSocket and renders
-// the table. Kept dependency-free on purpose (just the browser + Tailwind).
+// Puppy Poker - core client. WebSocket + table/seat/action rendering.
+// Shared state is exposed on window.PP so panels.js can build on it.
 
 const SUIT = {
-  c: { sym: "\u2663", color: "black" }, // clubs
-  d: { sym: "\u2666", color: "red" },   // diamonds
-  h: { sym: "\u2665", color: "red" },   // hearts
-  s: { sym: "\u2660", color: "black" }, // spades
+  c: { sym: "\u2663", color: "black" },
+  d: { sym: "\u2666", color: "red" },
+  h: { sym: "\u2665", color: "red" },
+  s: { sym: "\u2660", color: "black" },
 };
 const RANK_LABEL = { T: "10" };
 
@@ -13,33 +13,39 @@ const tableId = location.pathname.split("/").pop();
 const pidKey = `pp_pid_${tableId}`;
 const nameKey = "pp_name";
 
-let pid = localStorage.getItem(pidKey);
-let myName = localStorage.getItem(nameKey) || "";
-let ws = null;
-let state = null;
+const PP = {
+  tableId,
+  pid: localStorage.getItem(pidKey),
+  name: localStorage.getItem(nameKey) || "",
+  ws: null,
+  state: null,
+  send,
+  toast,
+  $: (id) => document.getElementById(id),
+};
+window.PP = PP;
 
-// --- DOM helpers --------------------------------------------------------
-const $ = (id) => document.getElementById(id);
+const $ = PP.$;
 
+// --- card / toast helpers ----------------------------------------------
 function cardEl(code, small) {
   const div = document.createElement("div");
   if (code === "back") {
     div.className = "card back" + (small ? " small" : "");
     return div;
   }
-  const rank = code[0];
-  const suit = code[1];
-  const info = SUIT[suit] || { sym: "?", color: "black" };
+  const info = SUIT[code[1]] || { sym: "?", color: "black" };
   div.className = `card ${info.color}` + (small ? " small" : "");
   const r = document.createElement("span");
   r.className = "rank";
-  r.textContent = RANK_LABEL[rank] || rank;
+  r.textContent = RANK_LABEL[code[0]] || code[0];
   const s = document.createElement("span");
   s.className = "suit";
   s.textContent = info.sym;
   div.append(r, s);
   return div;
 }
+PP.cardEl = cardEl;
 
 function placeholderCard() {
   const div = document.createElement("div");
@@ -52,15 +58,21 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.remove("hidden");
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.add("hidden"), 2600);
+  toast._t = setTimeout(() => t.classList.add("hidden"), 2800);
 }
+
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+PP.escapeHtml = escapeHtml;
 
 // --- bootstrap ----------------------------------------------------------
 async function ensurePid() {
-  if (!pid) {
+  if (!PP.pid) {
     const r = await fetch("/api/new_pid");
-    pid = (await r.json()).pid;
-    localStorage.setItem(pidKey, pid);
+    PP.pid = (await r.json()).pid;
+    localStorage.setItem(pidKey, PP.pid);
   }
 }
 
@@ -70,88 +82,90 @@ async function loadTableInfo() {
     if (!r.ok) return;
     const info = await r.json();
     $("tableName").textContent = info.name;
-    $("blindsInfo").textContent =
-      `Blinds ${info.blinds.sb}/${info.blinds.bb} \u2022 Stack ${info.stack}`;
   } catch (e) { /* ignore */ }
-}
-
-function showNameModal() {
-  $("nameInput").value = myName;
-  $("nameModal").classList.remove("hidden");
-  $("nameInput").focus();
-}
-
-function hideNameModal() {
-  $("nameModal").classList.add("hidden");
 }
 
 function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const url = `${proto}://${location.host}/ws/${tableId}` +
-    `?pid=${encodeURIComponent(pid)}&name=${encodeURIComponent(myName)}`;
-  ws = new WebSocket(url);
-  ws.onopen = () => { $("connDot").textContent = "connected"; $("connDot").className = "text-xs text-emerald-400"; };
-  ws.onclose = () => {
+    `?pid=${encodeURIComponent(PP.pid)}&name=${encodeURIComponent(PP.name)}`;
+  PP.ws = new WebSocket(url);
+  PP.ws.onopen = () => {
+    $("connDot").textContent = "connected";
+    $("connDot").className = "text-xs text-emerald-400";
+  };
+  PP.ws.onclose = () => {
     $("connDot").textContent = "reconnecting...";
     $("connDot").className = "text-xs text-amber-400";
     setTimeout(connect, 1500);
   };
-  ws.onmessage = (ev) => {
+  PP.ws.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
-    if (data.type === "state") { state = data; render(); }
+    if (data.type === "state") { PP.state = data; render(); }
     else if (data.type === "error") { toast(data.message); }
   };
 }
 
 function send(obj) {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  if (PP.ws && PP.ws.readyState === WebSocket.OPEN) PP.ws.send(JSON.stringify(obj));
 }
 
 // --- rendering ----------------------------------------------------------
 function render() {
-  if (!state) return;
-  $("potLabel").textContent = `Pot: ${state.pot}`;
-  $("phaseLabel").textContent = state.phase === "waiting" ? "Waiting for players" : state.phase;
+  const s = PP.state;
+  if (!s) return;
+  $("potLabel").textContent = `Pot: ${s.pot}`;
+  $("phaseLabel").textContent = s.phase === "waiting" ? "Waiting for players" : s.phase;
+  $("blindsInfo").textContent =
+    `Blinds ${s.settings.small_blind}/${s.settings.big_blind}` +
+    (s.settings.ante ? ` \u2022 ante ${s.settings.ante}` : "") +
+    ` \u2022 buy-in ${s.settings.min_buyin}-${s.settings.max_buyin}`;
 
   renderBoard();
   renderSeats();
-  renderControls();
-  renderLog();
+  renderActionBar();
   renderResult();
+  if (window.renderPanels) window.renderPanels(s);
 }
 
 function renderBoard() {
+  const s = PP.state;
   const board = $("board");
   board.innerHTML = "";
   for (let i = 0; i < 5; i++) {
-    board.append(state.board[i] ? cardEl(state.board[i]) : placeholderCard());
+    board.append(s.board[i] ? cardEl(s.board[i]) : placeholderCard());
   }
+  const rabbit = $("rabbitRow");
+  rabbit.innerHTML = "";
+  (s.rabbit || []).forEach((c) => rabbit.append(cardEl(c, true)));
 }
 
 function renderSeats() {
+  const s = PP.state;
   const felt = $("felt");
   felt.querySelectorAll(".seat").forEach((e) => e.remove());
 
-  const players = [...state.players].sort((a, b) => a.seat - b.seat);
-  const meIdx = players.findIndex((p) => p.id === pid);
-  // Rotate so I'm always at the bottom (index 0).
-  const ordered = meIdx >= 0
-    ? players.slice(meIdx).concat(players.slice(0, meIdx))
-    : players;
+  const bySeat = {};
+  s.players.forEach((p) => { bySeat[p.seat] = p; });
 
-  const n = Math.max(ordered.length, 1);
-  ordered.forEach((p, k) => {
-    const angle = Math.PI / 2 + (k * 2 * Math.PI) / n;
+  // Order seats so I'm at the bottom. Build a circular seat list.
+  const n = s.seat_count;
+  const mySeat = s.you.seat;
+  for (let visual = 0; visual < n; visual++) {
+    const seatNum = mySeat != null ? (mySeat + visual) % n : visual;
+    const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
     const x = 50 + 46 * Math.cos(angle);
     const y = 50 + 44 * Math.sin(angle);
-    felt.append(seatEl(p, x, y));
-  });
+    const occupant = bySeat[seatNum];
+    felt.append(occupant ? seatEl(occupant, x, y) : openSeatEl(seatNum, x, y));
+  }
 }
 
 function seatEl(p, xPct, yPct) {
+  const s = PP.state;
   const wrap = document.createElement("div");
   wrap.className = "seat";
-  if (p.id === pid) wrap.classList.add("you");
+  if (p.id === PP.pid) wrap.classList.add("you");
   if (p.is_turn) wrap.classList.add("turn");
   if (p.status === "folded") wrap.classList.add("folded");
   wrap.style.left = xPct + "%";
@@ -159,21 +173,29 @@ function seatEl(p, xPct, yPct) {
 
   const cards = document.createElement("div");
   cards.className = "cards";
-  if (p.hole && p.hole.length) {
-    p.hole.forEach((c) => cards.append(cardEl(c, true)));
-  }
+  (p.hole || []).forEach((c) => cards.append(cardEl(c, true)));
 
   const pod = document.createElement("div");
   pod.className = "pod relative";
   const disc = p.connected ? "" : '<span class="disconnected-dot" title="disconnected"></span>';
+  const crown = p.is_owner ? " \u2605" : "";
+  const topup = p.pending_topup ? ` <span class="text-emerald-400">(+${p.pending_topup})</span>` : "";
   pod.innerHTML =
-    `<div class="name">${escapeHtml(p.name)}${disc}</div>` +
-    `<div class="stack">${p.stack} chips</div>`;
+    `<div class="name">${escapeHtml(p.name)}${crown}${disc}</div>` +
+    `<div class="stack">${p.stack} chips${topup}</div>`;
   if (p.is_button) {
     const b = document.createElement("div");
     b.className = "badge";
     b.textContent = "D";
     pod.append(b);
+  }
+  // Host can edit any seated stack between hands.
+  if (s.you.is_owner) {
+    const edit = document.createElement("button");
+    edit.className = "absolute -bottom-2 -right-2 bg-slate-700 hover:bg-slate-600 text-[10px] px-1.5 py-0.5 rounded";
+    edit.textContent = "edit";
+    edit.dataset.editStack = p.id;
+    pod.append(edit);
   }
 
   wrap.append(cards, pod);
@@ -186,52 +208,46 @@ function seatEl(p, xPct, yPct) {
   return wrap;
 }
 
-function renderControls() {
-  const actionBar = $("actionBar");
-  const startBar = $("startBar");
-  const you = state.you;
-  const isBetting = ["preflop", "flop", "turn", "river"].includes(state.phase);
-  const myTurn = state.to_act === pid && isBetting;
+function openSeatEl(seatNum, xPct, yPct) {
+  const s = PP.state;
+  const wrap = document.createElement("div");
+  wrap.className = "seat open";
+  wrap.style.left = xPct + "%";
+  wrap.style.top = yPct + "%";
+  const pod = document.createElement("div");
+  pod.className = "pod";
+  const canSit = !s.you.seated;
+  pod.innerHTML = `<div class="name text-slate-400">Seat ${seatNum + 1}</div>` +
+    `<div class="stack text-slate-500">${canSit ? "Sit here" : "open"}</div>`;
+  if (canSit) pod.dataset.sitSeat = seatNum;
+  wrap.append(pod);
+  return wrap;
+}
 
-  // Start / next-hand controls.
-  startBar.classList.toggle("hidden", isBetting);
-  if (!isBetting) {
-    const showStart = state.phase === "waiting";
-    const showNext = state.phase === "showdown";
-    $("startBtn").classList.toggle("hidden", !showStart);
-    $("nextBtn").classList.toggle("hidden", !showNext);
-    $("startBtn").disabled = !state.can_start;
-    $("waitMsg").textContent = showStart && !state.can_start
-      ? "Need at least 2 players with chips to start." : "";
-  }
-
-  actionBar.classList.toggle("hidden", !myTurn);
+function renderActionBar() {
+  const s = PP.state;
+  const you = s.you;
+  const isBetting = ["preflop", "flop", "turn", "river"].includes(s.phase);
+  const myTurn = s.to_act === PP.pid && isBetting;
+  const bar = $("actionBar");
+  bar.classList.toggle("hidden", !myTurn);
   if (!myTurn) return;
 
-  const callBtn = actionBar.querySelector('[data-act="call"]');
-  const checkBtn = actionBar.querySelector('[data-act="check"]');
+  const callBtn = bar.querySelector('[data-act="call"]');
+  const checkBtn = bar.querySelector('[data-act="check"]');
   checkBtn.classList.toggle("hidden", !you.can_check);
   callBtn.classList.toggle("hidden", you.can_check);
   callBtn.textContent = `Call ${you.to_call}`;
 
-  // Raise slider bounds. Max raise-to = my chips already in this round
-  // plus my remaining stack. min_raise_to comes from the server.
-  const minTo = Math.max(you.min_raise_to, state.current_bet + 1);
-  const myContribution = state.current_bet - you.to_call; // == my round_bet
+  const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
+  const myContribution = s.current_bet - you.to_call; // == my round_bet
   const maxRaiseTo = myContribution + you.stack;
-
   const slider = $("raiseSlider");
   const amount = $("raiseAmount");
-  const raiseBtn = actionBar.querySelector('[data-act="raise"]');
-  if (minTo > maxRaiseTo) {
-    // Can't make a legal raise (not enough chips) -> hide raise controls.
-    slider.classList.add("hidden");
-    amount.classList.add("hidden");
-    raiseBtn.classList.add("hidden");
-  } else {
-    slider.classList.remove("hidden");
-    amount.classList.remove("hidden");
-    raiseBtn.classList.remove("hidden");
+  const raiseBtn = bar.querySelector('[data-act="raise"]');
+  const canRaise = minTo <= maxRaiseTo;
+  [slider, amount, raiseBtn].forEach((el) => el.classList.toggle("hidden", !canRaise));
+  if (canRaise) {
     slider.min = minTo; slider.max = maxRaiseTo;
     if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) {
       slider.value = minTo; amount.value = minTo;
@@ -240,51 +256,25 @@ function renderControls() {
   }
 }
 
-function renderLog() {
-  const log = $("log");
-  log.innerHTML = "";
-  (state.log || []).forEach((line) => {
-    const div = document.createElement("div");
-    if (line.startsWith("[chat]")) {
-      div.className = "text-sky-300";
-      div.textContent = line.replace("[chat] ", "");
-    } else if (line.startsWith("---")) {
-      div.className = "text-slate-500 font-semibold";
-      div.textContent = line;
-    } else {
-      div.textContent = line;
-    }
-    log.append(div);
-  });
-  log.scrollTop = log.scrollHeight;
-}
-
 function renderResult() {
+  const s = PP.state;
   const banner = $("resultBanner");
-  if (state.phase === "showdown" && state.results) {
-    const parts = state.results.pots.map((r) => {
-      const who = r.winner_names.join(", ");
+  if (s.phase === "showdown" && s.results) {
+    banner.textContent = s.results.pots.map((r) => {
       const hand = r.hand_name ? ` with ${r.hand_name}` : "";
-      return `${who} wins ${r.amount}${hand}`;
-    });
-    banner.textContent = parts.join(" \u2022 ");
+      return `${r.winner_names.join(", ")} wins ${r.amount}${hand}`;
+    }).join(" \u2022 ");
   } else {
     banner.textContent = "";
   }
 }
 
-function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, (c) => (
-    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-// --- event wiring -------------------------------------------------------
-function wireEvents() {
+// --- core event wiring --------------------------------------------------
+function wireCore() {
   $("joinBtn").onclick = () => {
-    const v = $("nameInput").value.trim() || "Player";
-    myName = v.slice(0, 20);
-    localStorage.setItem(nameKey, myName);
-    hideNameModal();
+    PP.name = ($("nameInput").value.trim() || "Player").slice(0, 20);
+    localStorage.setItem(nameKey, PP.name);
+    $("nameModal").classList.add("hidden");
     connect();
   };
   $("nameInput").addEventListener("keydown", (e) => {
@@ -292,47 +282,35 @@ function wireEvents() {
   });
 
   $("shareBtn").onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      toast("Invite link copied!");
-    } catch (e) {
-      prompt("Copy this link:", location.href);
-    }
+    try { await navigator.clipboard.writeText(location.href); toast("Invite link copied!"); }
+    catch (e) { prompt("Copy this link:", location.href); }
   };
 
   document.querySelectorAll(".act-btn").forEach((btn) => {
     btn.onclick = () => {
       const act = btn.dataset.act;
-      if (act === "raise") {
-        send({ type: "action", action: "raise", amount: +$("raiseAmount").value });
-      } else {
-        send({ type: "action", action: act });
-      }
+      if (act === "raise") send({ type: "action", action: "raise", amount: +$("raiseAmount").value });
+      else send({ type: "action", action: act });
     };
   });
-
   $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
   $("raiseAmount").oninput = () => { $("raiseSlider").value = $("raiseAmount").value; };
 
-  $("startBtn").onclick = () => send({ type: "start" });
-  $("nextBtn").onclick = () => send({ type: "next_hand" });
-
-  $("chatForm").onsubmit = (e) => {
-    e.preventDefault();
-    const text = $("chatInput").value.trim();
-    if (text) { send({ type: "chat", text }); $("chatInput").value = ""; }
-  };
+  // Delegated clicks on the felt: sit on open seat, or host edit stack.
+  $("felt").addEventListener("click", (e) => {
+    const sit = e.target.closest("[data-sit-seat]");
+    if (sit) { window.openSitModal(+sit.dataset.sitSeat); return; }
+    const edit = e.target.closest("[data-edit-stack]");
+    if (edit) { window.editStack(edit.dataset.editStack); }
+  });
 }
 
-// --- go -----------------------------------------------------------------
 (async function main() {
   await ensurePid();
   await loadTableInfo();
-  wireEvents();
-  if (myName) {
-    // Returning player: still confirm the name (pre-filled) for clarity.
-    showNameModal();
-  } else {
-    showNameModal();
-  }
+  wireCore();
+  if (window.wirePanels) window.wirePanels();
+  $("nameInput").value = PP.name;
+  $("nameModal").classList.remove("hidden");
+  $("nameInput").focus();
 })();

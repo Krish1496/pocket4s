@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.rooms import RoomManager, new_player_id
+from poker.settings import TableSettings
 
 BASE = Path(__file__).parent
 app = FastAPI(title="Puppy Poker")
@@ -35,10 +36,10 @@ def create_table(
     big_blind: int = Form(2),
     stack: int = Form(200),
 ):
-    sb = max(1, small_blind)
-    bb = max(sb + 1, big_blind)
-    stack = max(bb * 10, stack)
-    room = manager.create(table_name, sb, bb, stack)
+    settings = TableSettings(
+        small_blind=small_blind, big_blind=big_blind, default_buyin=stack)
+    settings._normalize()
+    room = manager.create(table_name, settings)
     return RedirectResponse(url=f"/t/{room.table_id}", status_code=303)
 
 
@@ -79,7 +80,7 @@ async def ws_game(ws: WebSocket, table_id: str, pid: str = "", name: str = "Play
 
     name = (name or "Player").strip()[:20] or "Player"
     async with room.lock:
-        room.game.add_player(pid, name)
+        room.game.register_member(pid, name)
         room.connect(pid, ws)
         await room.broadcast()
 
@@ -104,24 +105,36 @@ async def _handle(room, pid: str, msg: dict) -> None:
     try:
         if t == "action":
             g.act(pid, msg.get("action", ""), int(msg.get("amount", 0)))
+        elif t == "sit":
+            g.request_sit(pid, int(msg.get("seat", -1)), int(msg.get("amount", 0)))
+        elif t == "topup":
+            g.request_topup(pid, int(msg.get("amount", 0)))
+        elif t == "approve":
+            g.approve_request(pid, str(msg.get("target", "")))
+        elif t == "deny":
+            g.deny_request(pid, str(msg.get("target", "")))
+        elif t == "set_stack":
+            g.owner_set_stack(pid, str(msg.get("target", "")), int(msg.get("amount", 0)))
+        elif t == "settings":
+            g.owner_set_settings(pid, **(msg.get("changes") or {}))
+        elif t == "stand_up":
+            g.stand_up(pid)
         elif t == "start":
-            if g.can_start():
+            if g.is_owner(pid) and g.can_start():
                 g.start_hand()
         elif t == "next_hand":
-            if g.phase.value == "showdown":
+            if g.is_owner(pid) and g.phase.value == "showdown":
                 g.end_hand()
                 if g.can_start():
                     g.start_hand()
         elif t == "chat":
             text = str(msg.get("text", ""))[:140].strip()
-            p = g.get(pid)
-            if text and p:
-                g._log(f"[chat] {p.name}: {text}")
+            if text:
+                g.chat(pid, text)
         elif t == "leave":
-            g.remove_player(pid)
+            g.remove_member(pid)
         elif t == "ping":
             pass
     except ValueError as e:
-        # Send a private error back to just this player.
         for ws in room.sockets.get(pid, set()):
             await ws.send_json({"type": "error", "message": str(e)})

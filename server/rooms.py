@@ -44,9 +44,9 @@ class Room:
             self.sockets[pid].discard(ws)
             if not self.sockets[pid]:
                 del self.sockets[pid]
-                p = self.game.get(pid)
-                if p:
-                    p.connected = False
+                # Keep them as a member/seat (reconnect-friendly) but mark
+                # their seat as disconnected so they auto-sit-out.
+                self.game.mark_disconnected(pid)
 
     async def broadcast(self) -> None:
         dead: list[tuple[str, WebSocket]] = []
@@ -65,9 +65,9 @@ class RoomManager:
     def __init__(self) -> None:
         self.rooms: dict[str, Room] = {}
 
-    def create(self, name: str, sb: int, bb: int, stack: int) -> Room:
+    def create(self, name: str, settings) -> Room:
         tid = new_table_id()
-        game = Game(small_blind=sb, big_blind=bb, starting_stack=stack)
+        game = Game(settings=settings)
         room = Room(table_id=tid, game=game, name=name or "Poker Table")
         self.rooms[tid] = room
         return room

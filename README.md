@@ -8,10 +8,16 @@ Chips only, no real money.
 - Real-time multiplayer over WebSockets
 - Full No-Limit Hold'em rules: blinds, betting rounds, all-ins, **side pots**
 - Correct 7-card hand evaluation (brute-forced, fully tested)
-- Create a table -> share an invite link
-- Reconnect-friendly (your seat is remembered per table)
-- In-table chat + action feed
-- Zero JS dependencies on the client; Tailwind via CDN
+- **Host/owner controls**: only the host starts hands, edits stacks, approves
+  buy-ins, and changes settings
+- **Seat selection**: pick any of the 8 seats when you buy in
+- **Buy-in approval flow**: non-hosts request a buy-in/top-up; host approves
+- **Top-ups / rebuys**: add chips (applied at the start of the next hand)
+- **Ledger**: tracks each player's buy-ins, current stack, and net P/L
+- **Separate feeds**: hand log and chat live in their own tabs
+- **Game settings**: editable blinds, ante, UTG straddle, rabbit hunting,
+  7-2 offsuit bounty, buy-in min/max/default
+- Create a table -> share an invite link; reconnect-friendly
 
 ## Run it locally
 ```bash

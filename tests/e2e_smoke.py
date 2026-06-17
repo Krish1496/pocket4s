@@ -61,7 +61,20 @@ async def main():
         await recv_state(a)
         await recv_state(b)
 
-        # Start the hand from Alice.
+        # Alice is the host (first to connect). She sits instantly.
+        await a.send(json.dumps({"type": "sit", "seat": 0, "amount": 200}))
+        # Bob requests a seat; host must approve.
+        await b.send(json.dumps({"type": "sit", "seat": 1, "amount": 200}))
+        await asyncio.sleep(0.3)
+        sa = await drain_latest(a, await recv_state(a))
+        assert len(sa["requests"]) == 1, "host should see Bob's request"
+        await a.send(json.dumps({"type": "approve", "target": p2}))
+        await asyncio.sleep(0.3)
+        sa = await drain_latest(a, await recv_state(a))
+        assert len(sa["players"]) == 2, "both seated after approval"
+        print("seated:", [pl["name"] for pl in sa["players"]])
+
+        # Start the hand from Alice (host).
         await a.send(json.dumps({"type": "start"}))
         sa = await recv_until(a, "preflop")
         await recv_until(b, "preflop")

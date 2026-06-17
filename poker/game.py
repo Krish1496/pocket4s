@@ -1,8 +1,12 @@
-"""No-Limit Texas Hold'em game engine.
+"""No-Limit Texas Hold'em table + hand engine.
 
-A single `Game` owns one table's worth of state and runs hands as a
-state machine. It is deliberately framework-agnostic: it knows nothing
-about WebSockets or HTTP. Feed it actions, ask it for snapshots.
+A single `Game` owns one table: its members, owner, seated players,
+buy-in flow, ledger, settings, and the live hand state machine. It is
+framework-agnostic -- it knows nothing about WebSockets or HTTP. Feed it
+actions, ask it for snapshots.
+
+Crowd-pleaser flavor (rabbit hunting, 7-2 bounty) lives in `extras.py`;
+money tracking in `ledger.py`; tunables in `settings.py`.
 """
 from __future__ import annotations
 
@@ -10,8 +14,11 @@ from enum import Enum
 
 from .cards import Deck
 from .player import Player, Status
-from .potting import build_pots, settle
+from .potting import settle
 from .evaluator import describe
+from .settings import TableSettings, SEAT_COUNT
+from .ledger import Ledger
+from . import extras
 
 
 class Phase(str, Enum):
@@ -27,61 +34,235 @@ STREET_ORDER = [Phase.PREFLOP, Phase.FLOP, Phase.TURN, Phase.RIVER]
 
 
 class Game:
-    def __init__(self, small_blind: int = 1, big_blind: int = 2,
+    def __init__(self, settings: TableSettings | None = None,
+                 small_blind: int = 1, big_blind: int = 2,
                  starting_stack: int = 200, seed: int | None = None) -> None:
-        self.players: list[Player] = []  # seat order
-        self.sb = small_blind
-        self.bb = big_blind
-        self.starting_stack = starting_stack
+        self.settings = settings or TableSettings(
+            small_blind=small_blind, big_blind=big_blind,
+            default_buyin=starting_stack)
+        self.settings._normalize()
         self._seed = seed
 
+        # Table membership (everyone connected, seated or spectating).
+        self.members: dict[str, str] = {}      # pid -> name
+        self.owner: str | None = None
+        self.ledger = Ledger()
+        self.requests: list[dict] = []          # pending buy-in/top-up requests
+
+        # Seated players (have chips + a seat). Kept sorted by seat.
+        self.players: list[Player] = []
+
+        # Live hand state.
         self.phase = Phase.WAITING
         self.button = 0
+        self._last_button_pid: str | None = None
         self.deck: Deck | None = None
         self.board: list = []
+        self.rabbit_board: list = []
         self.current_bet = 0
-        self.min_raise = big_blind
-        self.to_act: str | None = None  # player id whose turn it is
+        self.min_raise = self.bb
+        self.to_act: str | None = None
         self._acted: set[str] = set()
-        self.log: list[str] = []
+        self._straddle_idx: int | None = None
         self.last_results: dict | None = None
         self.hand_no = 0
 
-    # ------------------------------------------------------------------ seats
-    def add_player(self, pid: str, name: str) -> Player:
-        if any(p.id == pid for p in self.players):
-            return self.get(pid)
-        seat = self._first_free_seat()
-        p = Player(pid, name, seat, self.starting_stack)
-        self.players.append(p)
-        self.players.sort(key=lambda x: x.seat)
-        self._log(f"{name} sat down in seat {seat + 1}")
-        return p
+        # Two separate feeds, as requested.
+        self.hand_log: list[str] = []
+        self.chat_log: list[str] = []
 
-    def remove_player(self, pid: str) -> None:
+    # blinds read straight from settings so an owner edit takes effect next hand
+    @property
+    def sb(self) -> int:
+        return self.settings.small_blind
+
+    @property
+    def bb(self) -> int:
+        return self.settings.big_blind
+
+    @property
+    def starting_stack(self) -> int:
+        return self.settings.default_buyin
+
+    # =============================================================== members
+    def register_member(self, pid: str, name: str) -> None:
+        self.members[pid] = name
+        self.ledger.record_name(pid, name)
         p = self.get(pid)
-        if not p:
-            return
-        if self.phase != Phase.WAITING and p.in_hand:
-            # Fold them out of the live hand first.
-            p.status = Status.FOLDED
-        self.players = [x for x in self.players if x.id != pid]
-        self._log(f"{p.name} left the table")
+        if p:
+            p.name = name
+            p.connected = True
+        if self.owner is None:
+            self.owner = pid
+            self._log(f"{name} is now the table host")
+
+    def is_owner(self, pid: str) -> bool:
+        return pid == self.owner
 
     def get(self, pid: str) -> Player | None:
         return next((p for p in self.players if p.id == pid), None)
 
-    def _first_free_seat(self) -> int:
-        taken = {p.seat for p in self.players}
-        seat = 0
-        while seat in taken:
-            seat += 1
-        return seat
+    def seat_taken(self, seat: int) -> bool:
+        return any(p.seat == seat for p in self.players)
+
+    def open_seats(self) -> list[int]:
+        return [s for s in range(SEAT_COUNT) if not self.seat_taken(s)]
 
     def seated_with_chips(self) -> list[Player]:
         return [p for p in self.players if p.stack > 0 and p.connected]
 
-    # ----------------------------------------------------------------- hands
+    # ============================================================ buy-in flow
+    def request_sit(self, pid: str, seat: int, amount: int) -> None:
+        """Player asks to take a seat with a buy-in. Owner is auto-approved."""
+        if self.get(pid):
+            raise ValueError("You are already seated")
+        if seat < 0 or seat >= SEAT_COUNT:
+            raise ValueError("Invalid seat")
+        if self.seat_taken(seat):
+            raise ValueError("That seat is taken")
+        amount = self._clamp_buyin(amount)
+        name = self.members.get(pid, "Player")
+        if self.is_owner(pid):
+            self._seat_player(pid, name, seat, amount)
+        else:
+            self._queue_request(pid, "sit", amount, seat)
+
+    def request_topup(self, pid: str, amount: int) -> None:
+        """Seated player asks to add chips. Lands at the start of next hand."""
+        p = self.get(pid)
+        if not p:
+            raise ValueError("Sit down before topping up")
+        amount = max(1, int(amount))
+        if self.is_owner(pid):
+            self._grant_topup(pid, amount)
+        else:
+            self._queue_request(pid, "topup", amount, p.seat)
+
+    def approve_request(self, owner_pid: str, target_pid: str) -> None:
+        self._require_owner(owner_pid)
+        req = self._pop_request(target_pid)
+        if not req:
+            raise ValueError("No such request")
+        name = self.members.get(target_pid, "Player")
+        if req["kind"] == "sit":
+            if self.seat_taken(req["seat"]):
+                req["seat"] = self._first_open_seat()
+            self._seat_player(target_pid, name, req["seat"], req["amount"])
+        else:
+            self._grant_topup(target_pid, req["amount"])
+
+    def deny_request(self, owner_pid: str, target_pid: str) -> None:
+        self._require_owner(owner_pid)
+        req = self._pop_request(target_pid)
+        if req:
+            name = self.members.get(target_pid, "Player")
+            self._log(f"Host declined {name}'s buy-in request")
+
+    def owner_set_stack(self, owner_pid: str, target_pid: str, amount: int) -> None:
+        """Owner directly sets a player's stack; the delta hits the ledger as
+        a buy-in adjustment so net P/L stays honest."""
+        self._require_owner(owner_pid)
+        p = self.get(target_pid)
+        if not p:
+            raise ValueError("That player is not seated")
+        amount = max(0, int(amount))
+        if self.phase != Phase.WAITING and p.in_hand:
+            raise ValueError("Can't edit a stack mid-hand for an active player")
+        delta = amount - p.stack
+        p.stack = amount
+        self.ledger.add_buyin(target_pid, delta)
+        self._log(f"Host set {p.name}'s stack to {amount}")
+
+    def owner_set_settings(self, owner_pid: str, **changes) -> None:
+        self._require_owner(owner_pid)
+        self.settings.apply(**changes)
+        self._log("Host updated table settings")
+
+    # --- buy-in helpers --------------------------------------------------
+    def _clamp_buyin(self, amount: int) -> int:
+        amount = int(amount)
+        return max(self.settings.min_buyin, min(self.settings.max_buyin, amount))
+
+    def _seat_player(self, pid: str, name: str, seat: int, amount: int) -> None:
+        p = Player(pid, name, seat, amount)
+        self.players.append(p)
+        self.players.sort(key=lambda x: x.seat)
+        self.ledger.add_buyin(pid, amount)
+        self._log(f"{name} sits in seat {seat + 1} with {amount} chips")
+
+    def _grant_topup(self, pid: str, amount: int) -> None:
+        p = self.get(pid)
+        if not p:
+            return
+        if self.phase == Phase.WAITING:
+            p.stack += amount
+        else:
+            p.pending_topup += amount
+        self.ledger.add_buyin(pid, amount)
+        when = "added" if self.phase == Phase.WAITING else "added next hand"
+        self._log(f"{p.name} tops up {amount} ({when})")
+
+    def _queue_request(self, pid: str, kind: str, amount: int, seat: int) -> None:
+        self._pop_request(pid)  # one pending request per player
+        self.requests.append({
+            "id": pid, "name": self.members.get(pid, "Player"),
+            "kind": kind, "amount": amount, "seat": seat,
+        })
+        self._log(f"{self.members.get(pid, 'Player')} requested a buy-in "
+                  f"of {amount} (awaiting host)")
+
+    def _pop_request(self, pid: str) -> dict | None:
+        for i, r in enumerate(self.requests):
+            if r["id"] == pid:
+                return self.requests.pop(i)
+        return None
+
+    def _first_open_seat(self) -> int:
+        seats = self.open_seats()
+        if not seats:
+            raise ValueError("No open seats")
+        return seats[0]
+
+    def _require_owner(self, pid: str) -> None:
+        if not self.is_owner(pid):
+            raise ValueError("Only the host can do that")
+
+    # ============================================================ leaving
+    def stand_up(self, pid: str) -> None:
+        """Player gives up their seat. Their stack is cashed to the ledger."""
+        p = self.get(pid)
+        if not p:
+            return
+        if self.phase != Phase.WAITING and p.in_hand:
+            p.status = Status.FOLDED
+        self.ledger.cash_out(pid, p.stack)
+        self.players = [x for x in self.players if x.id != pid]
+        self._log(f"{p.name} stood up (cashed out {p.stack})")
+
+    def remove_member(self, pid: str) -> None:
+        self.stand_up(pid)
+        self._pop_request(pid)
+        self.members.pop(pid, None)
+        if self.owner == pid:
+            self._reassign_owner()
+
+    def mark_disconnected(self, pid: str) -> None:
+        p = self.get(pid)
+        if p:
+            p.connected = False
+
+    def _reassign_owner(self) -> None:
+        # Prefer a seated player, else any remaining member, else nobody.
+        if self.players:
+            self.owner = self.players[0].id
+        elif self.members:
+            self.owner = next(iter(self.members))
+        else:
+            self.owner = None
+        if self.owner:
+            self._log(f"{self.members.get(self.owner, 'Player')} is now the host")
+
+    # ============================================================ hands
     def can_start(self) -> bool:
         return self.phase == Phase.WAITING and len(self.seated_with_chips()) >= 2
 
@@ -91,14 +272,17 @@ class Game:
         self.hand_no += 1
         self.deck = Deck(seed=self._seed)
         self.board = []
+        self.rabbit_board = []
         self.current_bet = 0
         self.min_raise = self.bb
         self._acted = set()
+        self._straddle_idx = None
         self.last_results = None
         for p in self.players:
             p.reset_for_hand()
 
         self._advance_button()
+        self._post_antes()
         self._post_blinds()
         self._deal_holes()
         self.phase = Phase.PREFLOP
@@ -106,17 +290,16 @@ class Game:
         self._begin_betting(preflop=True)
 
     def _advance_button(self) -> None:
-        contenders = [i for i, p in enumerate(self.players) if p.in_hand]
-        if not contenders:
+        elig = [i for i, p in enumerate(self.players) if p.in_hand]
+        if not elig:
             return
-        # Move button to the next eligible seat after its current spot.
-        nxt = None
-        for offset in range(1, len(self.players) + 1):
-            idx = (self.button + offset) % len(self.players)
-            if self.players[idx].in_hand:
-                nxt = idx
-                break
-        self.button = nxt if nxt is not None else contenders[0]
+        if self._last_button_pid is None:
+            self.button = elig[0]
+        else:
+            start = next((i for i, p in enumerate(self.players)
+                          if p.id == self._last_button_pid), -1)
+            self.button = self._next_in_hand(start) if start >= 0 else elig[0]
+        self._last_button_pid = self.players[self.button].id
 
     def _in_hand_indices(self) -> list[int]:
         return [i for i, p in enumerate(self.players) if p.in_hand]
@@ -128,6 +311,17 @@ class Game:
             if self.players[idx].in_hand:
                 return idx
         return start
+
+    def _post_antes(self) -> None:
+        ante = self.settings.ante
+        if ante <= 0:
+            return
+        posted = 0
+        for p in self.players:
+            if p.status == Status.ACTIVE:
+                posted += p.post_ante(ante)
+        if posted:
+            self._log(f"Antes posted ({ante} each, {posted} total)")
 
     def _post_blinds(self) -> None:
         idxs = self._in_hand_indices()
@@ -147,6 +341,15 @@ class Game:
         self._log(f"{sb_p.name} posts small blind {self.sb}")
         self._log(f"{bb_p.name} posts big blind {self.bb}")
 
+        if self.settings.straddle and len(idxs) >= 3:
+            straddle_idx = self._next_in_hand(bb_idx)
+            if straddle_idx not in (sb_idx, bb_idx):
+                amt = self.bb * 2
+                self.players[straddle_idx].bet(amt)
+                self.current_bet = amt
+                self._straddle_idx = straddle_idx
+                self._log(f"{self.players[straddle_idx].name} straddles {amt}")
+
     def _deal_holes(self) -> None:
         for p in self.players:
             if p.in_hand:
@@ -157,14 +360,18 @@ class Game:
         self._acted = set()
         if preflop:
             heads_up = len(self._in_hand_indices()) == 2
-            first = self.button if heads_up else self._next_in_hand(self._bb_idx)
+            if self._straddle_idx is not None:
+                first = self._next_in_hand(self._straddle_idx)
+            elif heads_up:
+                first = self.button
+            else:
+                first = self._next_in_hand(self._bb_idx)
         else:
             self.current_bet = 0
             self.min_raise = self.bb
             for p in self.players:
                 p.reset_for_street()
             first = self._next_in_hand(self.button)
-        # Skip players who can't act (already all-in).
         self.to_act = self._first_actor(first)
         if self.to_act is None:
             self._maybe_advance_street()
@@ -213,7 +420,6 @@ class Game:
         self._after_action()
 
     def _apply_raise(self, p: Player, amount: int, to_call: int) -> None:
-        # `amount` is the total chips the player wants their round bet to reach.
         target = amount
         if target <= self.current_bet:
             raise ValueError("A raise must exceed the current bet")
@@ -227,12 +433,10 @@ class Game:
         p.bet(target - p.round_bet)
         verb = "bets" if to_call == 0 else "raises to"
         self._log(f"{p.name} {verb} {target}")
-        # A full-size raise reopens the action.
         if raise_size >= self.min_raise:
             self.min_raise = raise_size
             self._acted = {p.id}
         else:
-            # Short all-in: does not reopen for those who already acted.
             self._acted.add(p.id)
         self.current_bet = target
 
@@ -263,8 +467,6 @@ class Game:
 
     # --------------------------------------------------------- street flow
     def _maybe_advance_street(self) -> None:
-        # If at most one player can still act, no more betting is possible:
-        # run the board out to showdown.
         if len(self._active_actors()) <= 1 and self._everyone_matched():
             self._run_out_and_showdown()
             return
@@ -306,6 +508,7 @@ class Game:
         for r in self.last_results["pots"]:
             names = ", ".join(self.get(w).name for w in r["winners"])
             self._log(f"{names} wins {r['amount']} with {describe(r['score'])}")
+        self._post_hand_extras()
 
     def _award_uncontested(self, winner: Player) -> None:
         pot = sum(p.committed for p in self.players)
@@ -317,11 +520,20 @@ class Game:
             "amount_each": pot, "score": None,
         }]}
         self._log(f"{winner.name} wins {pot} (everyone folded)")
+        self._post_hand_extras()
+
+    def _post_hand_extras(self) -> None:
+        for line in extras.apply_72_bounty(self):
+            self._log(line)
+        if len(self.board) < 5:
+            revealed = extras.rabbit_runout(self)
+            if revealed:
+                self._log("Rabbit hunt: " + " ".join(revealed))
 
     def end_hand(self) -> None:
-        """Reset to WAITING and clear busted players' seats remain (stack 0)."""
         self.phase = Phase.WAITING
         self.to_act = None
+        self.rabbit_board = []
         for p in self.players:
             p.hole = []
             p.round_bet = 0
@@ -333,6 +545,23 @@ class Game:
     def pot_total(self) -> int:
         return sum(p.committed for p in self.players)
 
+    def live_stacks(self) -> dict[str, int]:
+        return {p.id: p.stack for p in self.players}
+
     def _log(self, msg: str) -> None:
-        self.log.append(msg)
-        self.log = self.log[-60:]  # keep the feed bounded
+        self.hand_log.append(msg)
+        self.hand_log = self.hand_log[-100:]
+
+    def chat(self, pid: str, text: str) -> None:
+        name = self.members.get(pid, "Player")
+        self.chat_log.append(f"{name}: {text}")
+        self.chat_log = self.chat_log[-100:]
+
+    # back-compat convenience used by unit tests: register + auto-seat
+    def add_player(self, pid: str, name: str) -> Player:
+        if self.get(pid):
+            return self.get(pid)
+        self.register_member(pid, name)
+        seat = self._first_open_seat()
+        self._seat_player(pid, name, seat, self.starting_stack)
+        return self.get(pid)
