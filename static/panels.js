@@ -136,6 +136,8 @@
     show($("drawer"), false);
     show($("drawerScrim"), false);
   }
+  window.openDrawer = openDrawer;
+  window.closeDrawer = closeDrawer;
 
   // ---- modals ---------------------------------------------------------
   function openSitModal(seat) {

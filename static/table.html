@@ -136,7 +136,7 @@
           </div>
         </div>
         <div class="main-row">
-          <button data-act="fold" class="act-btn bg-rose-600 hover:bg-rose-500">Fold</button>
+          <button data-act="fold" class="act-btn bg-rose-600 hover:bg-rose-500">Fold (F)</button>
           <button data-act="check" class="act-btn bg-slate-600 hover:bg-slate-500">Check</button>
           <button data-act="call" class="act-btn bg-sky-600 hover:bg-sky-500">Call</button>
           <button data-act="raise" class="act-btn bg-emerald-500 hover:bg-emerald-400 text-slate-900">Raise</button>
@@ -174,7 +174,7 @@
     <div id="tabLedger" class="tab-pane flex-1 overflow-y-auto p-3 text-sm hidden"></div>
     <form id="chatForm" class="p-2 border-t border-slate-700 flex gap-2 hidden">
       <label for="chatInput" class="sr-only">Chat message</label>
-      <input id="chatInput" type="text" maxlength="140" placeholder="Say something..."
+      <input id="chatInput" type="text" maxlength="140" placeholder="Message... (M to focus)"
              class="flex-1 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
       <button class="btn-muted text-sm">Send</button>
     </form>
@@ -182,7 +182,7 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/poker.js?v=5"></script>
-  <script src="/static/panels.js?v=5"></script>
+  <script src="/static/poker.js?v=6"></script>
+  <script src="/static/panels.js?v=6"></script>
 </body>
 </html>

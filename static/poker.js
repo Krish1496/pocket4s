@@ -349,7 +349,8 @@ function renderActionBar() {
   const checkBtn = bar.querySelector('[data-act="check"]');
   checkBtn.classList.toggle("hidden", !you.can_check);
   callBtn.classList.toggle("hidden", you.can_check);
-  callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call";
+  checkBtn.textContent = "Check (K)";
+  callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call} (C)` : "Call (C)";
 
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack; // round_bet + stack
@@ -364,7 +365,7 @@ function renderActionBar() {
       slider.value = minTo; amount.value = minTo;
     }
     bar.querySelector('[data-act="raise"]').textContent =
-      (you.to_call === 0) ? "Bet" : "Raise";
+      (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
   }
   updateTimer();
 }
@@ -507,6 +508,39 @@ function wireCore() {
     if (sit) { window.openSitModal(+sit.dataset.sitSeat); return; }
     const edit = e.target.closest("[data-edit-stack]");
     if (edit) { window.editStack(edit.dataset.editStack); }
+  });
+
+  wireHotkeys();
+}
+
+// Keyboard shortcuts: C call, K check, R raise, M chat. Ignored while typing.
+function wireHotkeys() {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target;
+    const tag = (el.tagName || "").toLowerCase();
+    const typing = tag === "input" || tag === "textarea" || el.isContentEditable;
+    const key = e.key.toLowerCase();
+
+    if (key === "m" && !typing) {                 // open chat + focus input
+      e.preventDefault();
+      if (window.openDrawer) window.openDrawer("chat");
+      setTimeout(() => { const c = $("chatInput"); if (c) c.focus(); }, 60);
+      return;
+    }
+    if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
+    if (typing) return;
+
+    const bar = $("actionBar");
+    if (bar.classList.contains("hidden")) return;  // only on your turn
+    const fire = (sel) => {
+      const b = bar.querySelector(sel);
+      if (b && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
+    };
+    if (key === "c") fire('[data-act="call"]');
+    else if (key === "k") fire('[data-act="check"]');
+    else if (key === "r") fire('[data-act="raise"]');
+    else if (key === "f") fire('[data-act="fold"]');
   });
 }
 
