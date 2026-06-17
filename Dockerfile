@@ -12,4 +12,4 @@ COPY . .
 ENV PORT=8021
 EXPOSE 8021
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT} --ws-ping-interval 25 --ws-ping-timeout 60 --timeout-keep-alive 75"]

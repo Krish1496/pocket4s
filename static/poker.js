@@ -90,20 +90,61 @@ function connect() {
   const url = `${proto}://${location.host}/ws/${tableId}` +
     `?pid=${encodeURIComponent(PP.pid)}&name=${encodeURIComponent(PP.name)}`;
   PP.ws = new WebSocket(url);
+
   PP.ws.onopen = () => {
+    PP.reconnectAttempts = 0;            // reset backoff on success
     $("connDot").textContent = "connected";
     $("connDot").className = "text-xs text-emerald-400";
+    startHeartbeat();
   };
-  PP.ws.onclose = () => {
-    $("connDot").textContent = "reconnecting...";
+
+  PP.ws.onclose = (ev) => {
+    stopHeartbeat();
+    console.warn("WebSocket closed", { code: ev && ev.code, reason: ev && ev.reason });
+    // 4404 = the server has no such table (it restarted and lost it, or the
+    // link is wrong). Don't loop forever -- tell the player plainly.
+    if (ev && ev.code === 4404) {
+      tableGone();
+      return;
+    }
+    const n = (PP.reconnectAttempts = (PP.reconnectAttempts || 0) + 1);
+    const delay = Math.min(1000 * 2 ** (n - 1), 15000) + Math.random() * 400;
+    $("connDot").textContent = `reconnecting (${n})...`;
     $("connDot").className = "text-xs text-amber-400";
-    setTimeout(connect, 1500);
+    clearTimeout(PP.reconnectTimer);
+    PP.reconnectTimer = setTimeout(connect, delay);
   };
+
   PP.ws.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
     if (data.type === "state") { PP.state = data; onStateTimer(); render(); }
     else if (data.type === "error") { toast(data.message); }
   };
+}
+
+// Keep the socket warm so idle proxies / VPNs don't silently kill it.
+function startHeartbeat() {
+  stopHeartbeat();
+  PP.heartbeat = setInterval(() => {
+    if (PP.ws && PP.ws.readyState === WebSocket.OPEN) {
+      PP.ws.send(JSON.stringify({ type: "ping" }));
+    }
+  }, 20000);
+}
+function stopHeartbeat() {
+  if (PP.heartbeat) { clearInterval(PP.heartbeat); PP.heartbeat = null; }
+}
+
+function tableGone() {
+  $("connDot").textContent = "table not found";
+  $("connDot").className = "text-xs text-rose-400";
+  const w = $("waitMsg");
+  if (w) {
+    w.innerHTML = "This table no longer exists (the server may have " +
+      'restarted). <a href="/" class="underline text-emerald-400">' +
+      "Create a new table</a>.";
+  }
+  toast("Table not found - it may have reset. Make a new one.");
 }
 
 function send(obj) {
