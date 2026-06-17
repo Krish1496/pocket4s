@@ -1,5 +1,4 @@
 // Puppy Poker - core client. WebSocket + table/seat/action rendering.
-// Shared state is exposed on window.PP so panels.js can build on it.
 
 const SUIT = {
   c: { sym: "\u2663", color: "black" },
@@ -27,7 +26,6 @@ window.PP = PP;
 
 const $ = PP.$;
 
-// --- card / toast helpers ----------------------------------------------
 function cardEl(code, small) {
   const div = document.createElement("div");
   if (code === "back") {
@@ -46,6 +44,22 @@ function cardEl(code, small) {
   return div;
 }
 PP.cardEl = cardEl;
+
+// A real 3D flip: starts face-down (card back) and rotates to reveal `code`.
+function flipCardEl(code, small, delay) {
+  const wrap = document.createElement("div");
+  wrap.className = "flip3d" + (small ? " small" : "");
+  const inner = document.createElement("div");
+  inner.className = "flip-inner";
+  if (delay) inner.style.animationDelay = delay + "s";
+  const back = document.createElement("div");
+  back.className = "flip-face flip-back";
+  const front = cardEl(code, small);
+  front.classList.add("flip-face", "flip-front");
+  inner.append(back, front);
+  wrap.append(inner);
+  return wrap;
+}
 
 function placeholderCard() {
   const div = document.createElement("div");
@@ -67,7 +81,6 @@ function escapeHtml(s) {
 }
 PP.escapeHtml = escapeHtml;
 
-// --- bootstrap ----------------------------------------------------------
 async function ensurePid() {
   if (!PP.pid) {
     const r = await fetch("/api/new_pid");
@@ -151,7 +164,6 @@ function send(obj) {
   if (PP.ws && PP.ws.readyState === WebSocket.OPEN) PP.ws.send(JSON.stringify(obj));
 }
 
-// --- rendering ----------------------------------------------------------
 function render() {
   const s = PP.state;
   if (!s) return;
@@ -162,6 +174,12 @@ function render() {
     pl.classList.remove("bump"); void pl.offsetWidth; pl.classList.add("bump");
   }
   $("phaseLabel").textContent = s.phase === "waiting" ? "Waiting for players" : s.phase;
+  const rabbitable = s.phase === "showdown" && (s.board || []).length < 5 &&
+    s.settings.rabbit_hunting && !(s.rabbit && s.rabbit.length);
+  $("board").classList.toggle("rabbitable", rabbitable);
+  $("board").title = rabbitable ? "Click or press H to rabbit-hunt" : "";
+  const rh = $("rabbitHint");
+  if (rh) { rh.classList.toggle("hidden", !rabbitable); }
   $("blindsInfo").textContent =
     `Blinds ${s.settings.small_blind}/${s.settings.big_blind}` +
     (s.settings.ante ? ` \u2022 ante ${s.settings.ante}` : "") +
@@ -203,12 +221,11 @@ function renderBoard() {
   board.innerHTML = "";
   for (let i = 0; i < 5; i++) {
     if (s.board[i]) {
-      const el = cardEl(s.board[i]);
-      if (i >= PP.anim.boardFrom) {           // newly dealt -> animate in
-        el.classList.add("deal-in");
-        el.style.animationDelay = ((i - PP.anim.boardFrom) * 0.09) + "s";
+      if (i >= PP.anim.boardFrom) {           // newly dealt -> real flip in
+        board.append(flipCardEl(s.board[i], false, (i - PP.anim.boardFrom) * 0.12));
+      } else {
+        board.append(cardEl(s.board[i]));
       }
-      board.append(el);
     } else {
       board.append(placeholderCard());
     }
@@ -254,15 +271,13 @@ function seatEl(p, xPct, yPct) {
   const cards = document.createElement("div");
   cards.className = "cards";
   (p.hole || []).forEach((c, i) => {
-    const el = cardEl(c, true);
-    if (PP.anim.dealHoles) {
-      el.classList.add("deal-in");
-      el.style.animationDelay = (i * 0.07) + "s";
+    if (PP.anim.dealHoles && c !== "back") {
+      cards.append(flipCardEl(c, true, i * 0.08));     // deal -> flip my cards up
     } else if (PP.anim.flipReveal && p.id !== PP.pid && c !== "back") {
-      el.classList.add("flip-in");          // opponent cards reveal at showdown
-      el.style.animationDelay = (i * 0.08) + "s";
+      cards.append(flipCardEl(c, true, i * 0.1));      // opponents reveal at showdown
+    } else {
+      cards.append(cardEl(c, true));
     }
-    cards.append(el);
   });
 
   const pod = document.createElement("div");
@@ -279,14 +294,12 @@ function seatEl(p, xPct, yPct) {
     b.textContent = "D";
     pod.append(b);
   }
-  // Live countdown ring on whoever must act.
   if (p.is_turn && s.action_timeout > 0 && s.turn_seconds_left != null) {
     const t = document.createElement("div");
     t.className = "seat-timer";
     t.textContent = Math.ceil(s.turn_seconds_left);
     pod.append(t);
   }
-  // Host can edit any seated stack between hands.
   if (s.you.is_owner) {
     const edit = document.createElement("button");
     edit.className = "absolute -bottom-2 -right-2 bg-slate-700 hover:bg-slate-600 text-[10px] px-1.5 py-0.5 rounded";
@@ -308,7 +321,6 @@ function seatEl(p, xPct, yPct) {
     tag.textContent = "WON +" + winAmount;
     wrap.append(tag);
   }
-  // Transient chat bubble above this seat.
   const bubble = PP.bubbles && PP.bubbles[p.id];
   if (bubble && performance.now() < bubble.until) {
     const b = document.createElement("div");
@@ -415,8 +427,6 @@ function submitRaise() {
   send({ type: "action", action: "raise", amount: v });
 }
 
-// --- chat bubbles -------------------------------------------------------
-// Pop the newest chat line above the speaker's seat for a few seconds.
 const BUBBLE_MS = 5000;
 function onStateChat() {
   const log = (PP.state && PP.state.chat_log) || [];
@@ -446,7 +456,6 @@ function pruneBubbles() {
   }
 }
 
-// --- action timer -------------------------------------------------------
 function onStateTimer() {
   const s = PP.state;
   if (s && s.turn_seconds_left != null && s.action_timeout > 0) {
@@ -468,7 +477,6 @@ function updateTimer() {
   wrap.classList.toggle("hidden", !myTurn);
   barEl.style.width = pct + "%";
   barEl.style.background = left < 5 ? "#ef4444" : left < 10 ? "#f59e0b" : "#34d399";
-  // Per-seat countdown number on whoever is to act.
   const seatTimer = document.querySelector(".seat.turn .seat-timer");
   if (seatTimer) seatTimer.textContent = Math.ceil(left);
 }
@@ -486,7 +494,6 @@ function renderResult() {
   }
 }
 
-// --- core event wiring --------------------------------------------------
 function wireCore() {
   $("joinBtn").onclick = () => {
     PP.name = ($("nameInput").value.trim() || "Player").slice(0, 20);
@@ -512,12 +519,10 @@ function wireCore() {
   });
   $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
   $("raiseAmount").oninput = () => { $("raiseSlider").value = $("raiseAmount").value; };
-  // Enter in the amount box commits the raise.
   $("raiseAmount").addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); submitRaise(); }
   });
 
-  // Quick-bet chips set the raise amount; All-in fires immediately.
   document.querySelectorAll(".quick").forEach((btn) => {
     btn.onclick = () => {
       const v = quickRaiseTo(btn.dataset.quick);
@@ -529,7 +534,6 @@ function wireCore() {
     };
   });
 
-  // Delegated clicks on the felt: sit on open seat, or host edit stack.
   $("felt").addEventListener("click", (e) => {
     const sit = e.target.closest("[data-sit-seat]");
     if (sit) { window.openSitModal(+sit.dataset.sitSeat); return; }
@@ -538,6 +542,17 @@ function wireCore() {
   });
 
   wireHotkeys();
+  // Click the community cards to rabbit-hunt after a folded-out hand.
+  $("board").addEventListener("click", tryRabbit);
+}
+
+// Ask the server to reveal the rest of the board (rabbit hunt).
+function tryRabbit() {
+  const s = PP.state;
+  if (!s || s.phase !== "showdown") return;
+  if ((s.board || []).length >= 5) return;
+  if (!s.settings.rabbit_hunting) { toast("Rabbit hunting is off (host setting)"); return; }
+  send({ type: "rabbit" });
 }
 
 // Keyboard shortcuts: C call, K check, R raise, M chat. Ignored while typing.
@@ -558,6 +573,8 @@ function wireHotkeys() {
     if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
     if (typing) return;
 
+    if (key === "h") { e.preventDefault(); tryRabbit(); return; }  // rabbit hunt
+
     const bar = $("actionBar");
     if (bar.classList.contains("hidden")) return;  // only on your turn
     const fire = (sel) => {
@@ -576,7 +593,6 @@ function wireHotkeys() {
   await loadTableInfo();
   wireCore();
   if (window.wirePanels) window.wirePanels();
-  // Smooth client-side countdown between server snapshots.
   setInterval(() => { updateTimer(); pruneBubbles(); }, 250);
   $("nameInput").value = PP.name;
   $("nameModal").classList.remove("hidden");

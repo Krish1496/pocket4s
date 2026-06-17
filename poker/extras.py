@@ -62,3 +62,19 @@ def rabbit_runout(game) -> list[str]:
         game.rabbit_board.append(card)
         revealed.append(card.code)
     return revealed
+
+
+def reveal_rabbit(game) -> None:
+    """Validate + perform an on-demand rabbit hunt. Raises ValueError with a
+    user-facing message if it isn't allowed right now."""
+    if game.phase.value != "showdown":
+        raise ValueError("You can only rabbit-hunt right after a hand")
+    if not game.settings.rabbit_hunting:
+        raise ValueError("Rabbit hunting is turned off for this table")
+    if len(game.board) >= 5:
+        raise ValueError("The board already ran out")
+    if game.rabbit_board:
+        return  # already revealed this hand
+    revealed = rabbit_runout(game)
+    if revealed:
+        game._log("Rabbit hunt: " + " ".join(revealed))

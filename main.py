@@ -125,12 +125,13 @@ async def _handle(room, pid: str, msg: dict) -> None:
         elif t == "next_hand":
             if g.is_owner(pid) and g.phase.value == "showdown":
                 g.end_hand()
-                if g.can_start():
-                    g.start_hand()
+                g.start_hand()  # raises (-> owner toast) if it can't continue
         elif t == "chat":
             text = str(msg.get("text", ""))[:140].strip()
             if text:
                 g.chat(pid, text)
+        elif t == "rabbit":
+            g.reveal_rabbit(pid)
         elif t == "leave":
             g.remove_member(pid)
         elif t == "ping":

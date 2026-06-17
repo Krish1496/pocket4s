@@ -40,8 +40,9 @@ class Player:
         self.hole = []
         self.round_bet = 0
         self.committed = 0
-        # Players with chips who are present (and not sitting out) get dealt in.
-        if self.stack > 0 and self.connected and not self.sit_out_next:
+        # Players with chips who aren't sitting out get dealt in -- even if
+        # momentarily disconnected (the action timer covers absent players).
+        if self.stack > 0 and not self.sit_out_next:
             self.status = Status.ACTIVE
         else:
             self.status = Status.SITTING_OUT

@@ -256,6 +256,39 @@
 }
 .card.flip-in { animation: flip-in 0.4s ease-out both; }
 
+/* Real 3D card flip (face-down -> face-up) ------------------------------ */
+.flip3d {
+  width: var(--card-w); height: var(--card-h);
+  perspective: 700px; display: inline-block;
+}
+.flip3d.small { --card-w: 34px; --card-h: 48px; }
+.flip-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  animation: flip3d 0.5s ease-out both;
+}
+@keyframes flip3d {
+  0% { transform: rotateY(180deg) translateY(-18px); }
+  60% { transform: rotateY(40deg) translateY(0); }
+  100% { transform: rotateY(0deg); }
+}
+.flip-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.flip-front { transform: rotateY(0deg); }
+.flip-front.card { width: 100%; height: 100%; }
+.flip-back {
+  transform: rotateY(180deg); border-radius: 6px;
+  background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #2547a3 6px, #2547a3 12px);
+  border: 2px solid #cbd5e1;
+}
+
+/* Rabbit-hunt: the board is clickable after a folded-out hand. */
+#board.rabbitable { cursor: pointer; }
+#board.rabbitable .card,
+#board.rabbitable .flip3d { box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.7); border-radius: 7px; }
+
 @keyframes winner-glow {
   0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.75), 0 0 18px rgba(34, 197, 94, 0.6); }
   50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.95), 0 0 30px rgba(34, 197, 94, 0.9); }
@@ -295,6 +328,13 @@
   display: flex; align-items: center; justify-content: center;
 }
 
+/* On desktop, slide the table left when the drawer opens so chat doesn't
+   cover the felt. (On mobile the drawer is a full overlay with a scrim.) */
+@media (min-width: 701px) {
+  main { transition: padding-right 0.25s ease; }
+  body.drawer-open main { padding-right: 376px; }
+}
+
 /* Mobile -----------------------------------------------------------------
    Shrink cards + seats so 8 pods don't overlap, and dock the action bar to
    the bottom of the screen where a thumb can reach it. */
@@ -303,6 +343,7 @@
   .card .rank { font-size: 13px; }
   .card .suit { font-size: 12px; }
   .card.small { --card-w: 22px; --card-h: 31px; }
+  .flip3d.small { --card-w: 22px; --card-h: 31px; }
   .card.small .rank { font-size: 10px; }
   .card.small .suit { font-size: 9px; }
   .felt { border-width: 8px; }

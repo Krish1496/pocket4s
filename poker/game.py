@@ -44,14 +44,12 @@ class Game:
         self.settings._normalize()
         self._seed = seed
 
-        # Table membership (everyone connected, seated or spectating).
         self.members: dict[str, str] = {}      # pid -> name
         self.owner: str | None = None
         self.ledger = Ledger()
         self.requests: list[dict] = []          # pending buy-in/top-up requests
 
-        # Seated players (have chips + a seat). Kept sorted by seat.
-        self.players: list[Player] = []
+        self.players: list[Player] = []        # seated players, sorted by seat
 
         # Live hand state.
         self.phase = Phase.WAITING
@@ -68,18 +66,16 @@ class Game:
         self.last_results: dict | None = None
         self.hand_no = 0
 
-        # Turn clock: a monotonic deadline + a sequence number so a stale
-        # auto-fold timer can tell whether the turn already moved on.
+        # Turn clock: monotonic deadline + sequence so a stale auto-fold
+        # timer can tell whether the turn already moved on.
         self.turn_deadline: float | None = None
         self.turn_seq = 0
 
-        # Two separate feeds, as requested. Chat entries are structured so
-        # the UI can colour each speaker consistently.
+        # Two separate feeds; chat entries are structured for per-speaker colour.
         self.hand_log: list[str] = []
         self.chat_log: list[dict] = []
         self._chat_n = 0
 
-    # blinds read straight from settings so an owner edit takes effect next hand
     @property
     def sb(self) -> int:
         return self.settings.small_blind
@@ -116,7 +112,9 @@ class Game:
         return [s for s in range(SEAT_COUNT) if not self.seat_taken(s)]
 
     def seated_with_chips(self) -> list[Player]:
-        return [p for p in self.players if p.stack > 0 and p.connected]
+        # No `connected` check: a heartbeat reconnect blip must not block the
+        # next hand. Absent players are covered by the action timer.
+        return [p for p in self.players if p.stack > 0]
 
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
         """Player asks to take a seat with a buy-in. Owner is auto-approved."""
@@ -526,10 +524,10 @@ class Game:
     def _post_hand_extras(self) -> None:
         for line in extras.apply_72_bounty(self):
             self._log(line)
-        if len(self.board) < 5:
-            revealed = extras.rabbit_runout(self)
-            if revealed:
-                self._log("Rabbit hunt: " + " ".join(revealed))
+
+    def reveal_rabbit(self, pid: str | None = None) -> None:
+        """On-demand rabbit hunt (click board / press H). Display only."""
+        extras.reveal_rabbit(self)
 
     def end_hand(self) -> None:
         self.phase = Phase.WAITING
@@ -590,7 +588,6 @@ class Game:
         self.act(pid, action)
         return True
 
-    # back-compat convenience used by unit tests: register + auto-seat
     def add_player(self, pid: str, name: str) -> Player:
         if self.get(pid):
             return self.get(pid)

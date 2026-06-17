@@ -129,12 +129,14 @@
   function openDrawer(tab) {
     if (tab) switchTab(tab);
     show($("drawer"), true);
+    document.body.classList.add("drawer-open");
     // Dim the table only on narrow screens; on desktop keep it visible.
     show($("drawerScrim"), window.innerWidth <= 700);
   }
   function closeDrawer() {
     show($("drawer"), false);
     show($("drawerScrim"), false);
+    document.body.classList.remove("drawer-open");
   }
   window.openDrawer = openDrawer;
   window.closeDrawer = closeDrawer;

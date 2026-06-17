@@ -229,3 +229,38 @@ def test_room_auto_deal_starts_next_hand():
     h1 = asyncio.run(run())
     assert g.hand_no == h1 + 1
     assert g.phase.value == "preflop"
+
+
+def test_next_hand_not_blocked_by_a_reconnect_blip():
+    """A brief disconnect must not stop the next hand from dealing."""
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    g.get("b").connected = False        # heartbeat blip
+    g.act(g.to_act, "fold")
+    assert g.phase.value == "showdown"
+    assert len(g.seated_with_chips()) == 2   # blip doesn't drop the player
+    g.end_hand()
+    assert g.can_start()                 # not blocked by the blip
+    g.start_hand()
+    assert g.phase.value == "preflop"
+
+
+def test_rabbit_hunt_is_on_demand():
+    g = make_table(action_timeout=0, rabbit_hunting=True)
+    _seat_two(g)
+    g.start_hand()
+    g.act(g.to_act, "fold")              # folded out preflop
+    assert g.phase.value == "showdown" and len(g.board) < 5
+    assert g.rabbit_board == []          # nothing auto-revealed
+    g.reveal_rabbit("a")
+    assert len(g.board) + len(g.rabbit_board) == 5
+
+
+def test_rabbit_hunt_blocked_when_setting_off():
+    g = make_table(action_timeout=0, rabbit_hunting=False)
+    _seat_two(g)
+    g.start_hand()
+    g.act(g.to_act, "fold")
+    with pytest.raises(ValueError):
+        g.reveal_rabbit("a")
