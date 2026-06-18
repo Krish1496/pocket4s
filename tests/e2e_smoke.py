@@ -90,7 +90,15 @@ async def main():
             state = latest[p1]
             actor = state["to_act"]
             if actor is None:
-                break
+                # Paced board reveal (1s beat) or all-in runout in progress --
+                # wait for the server's next frame instead of giving up.
+                if state["phase"] == "showdown":
+                    break
+                await asyncio.sleep(1.2)
+                latest[p1] = await drain_latest(a, latest[p1])
+                latest[p2] = await drain_latest(b, latest[p2])
+                guard += 1
+                continue
             view = latest[actor]
             action = "check" if view["you"]["can_check"] else "call"
             await clients[actor].send(

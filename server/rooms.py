@@ -37,6 +37,7 @@ class Room:
     autodeal_task: asyncio.Task | None = field(default=None)
     autoplay_task: asyncio.Task | None = field(default=None)
     runout_task: asyncio.Task | None = field(default=None)
+    street_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -68,6 +69,7 @@ class Room:
         self._arm_autodeal()
         self._arm_autoplay()
         self._arm_runout()
+        self._arm_street()
 
     # --- action clock ---------------------------------------------------
     def _arm_timer(self) -> None:
@@ -124,6 +126,31 @@ class Room:
                 return  # turn moved (or paused) -- this step is stale
             if autoplay.step(g):
                 await self.broadcast()
+
+    # --- 1-second beat before each new board street ----------------------
+    STREET_DELAY = 1.0
+
+    def _arm_street(self) -> None:
+        g = self.game
+        if g.paused or not g.street_pending:
+            return
+        if asyncio.current_task() is self.street_task:
+            return
+        if self.street_task and not self.street_task.done():
+            return
+        self.street_task = asyncio.create_task(self._run_street(g.hand_no))
+
+    async def _run_street(self, hand_no: int) -> None:
+        try:
+            await asyncio.sleep(self.STREET_DELAY)
+        except asyncio.CancelledError:
+            return
+        async with self.lock:
+            g = self.game
+            if g.paused or g.hand_no != hand_no or not g.street_pending:
+                return
+            g.reveal_next_street()
+            await self.broadcast()
 
     # --- paced all-in runout (flop ... turn ... river, one street at a time)
     RUNOUT_DELAY = 2.5  # seconds between each board reveal

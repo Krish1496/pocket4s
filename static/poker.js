@@ -209,7 +209,7 @@ function computeAnims(s) {
   }
   PP.anim = a;
   if (window.PPSFX) {
-    if (a.dealHoles || s.board.length > (PP.prevBoardLen || 0)) PPSFX.play("deal");
+    if (a.dealHoles) PPSFX.play("deal");          // board flips play per-card in renderBoard
     if (a.flipReveal) PPSFX.play("win");
     const mine = s.you && s.to_act === s.you.id, left = s.turn_seconds_left;
     if (mine && left != null && left <= 5 && (PP._prevLeft == null || PP._prevLeft > 5)) PPSFX.play("timeout");
@@ -229,7 +229,9 @@ function renderBoard() {
   for (let i = 0; i < 5; i++) {
     if (s.board[i]) {
       if (i >= PP.anim.boardFrom) {
-        board.append(flipCardEl(s.board[i], false, (i - PP.anim.boardFrom) * 0.12));
+        const step = i - PP.anim.boardFrom;
+        board.append(flipCardEl(s.board[i], false, step * 0.12));
+        if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
       } else {
         board.append(cardEl(s.board[i]));
       }

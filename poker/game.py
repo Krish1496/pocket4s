@@ -28,9 +28,8 @@ STREET_ORDER = [Phase.PREFLOP, Phase.FLOP, Phase.TURN, Phase.RIVER]
 
 
 class Game:
-    def __init__(self, settings: TableSettings | None = None,
-                 small_blind: int = 1, big_blind: int = 2,
-                 starting_stack: int = 200, seed: int | None = None) -> None:
+    def __init__(self, settings: TableSettings | None = None, small_blind: int = 1,
+                 big_blind: int = 2, starting_stack: int = 200, seed: int | None = None) -> None:
         self.settings = settings or TableSettings(
             small_blind=small_blind, big_blind=big_blind, default_buyin=starting_stack)
         self.settings._normalize()
@@ -53,6 +52,7 @@ class Game:
         self.run_vote: dict | None = None   # active run-it-twice vote, if any
         self.runout: dict | None = None     # paced all-in reveal in progress
         self.equity: dict = {}              # {pid: win%} during all-in runouts
+        self.street_pending = False         # 1s beat before the next board card
         self.current_bet = 0
         self.min_raise = self.bb
         self.to_act: str | None = None
@@ -193,10 +193,8 @@ class Game:
 
     def _queue_request(self, pid: str, kind: str, amount: int, seat: int) -> None:
         self._pop_request(pid)  # one pending request per player
-        self.requests.append({
-            "id": pid, "name": self.members.get(pid, "Player"),
-            "kind": kind, "amount": amount, "seat": seat,
-        })
+        self.requests.append({"id": pid, "name": self.members.get(pid, "Player"),
+                              "kind": kind, "amount": amount, "seat": seat})
         self._log(f"{self.members.get(pid, 'Player')} requested a buy-in of {amount} (awaiting host)")
 
     def _pop_request(self, pid: str) -> dict | None:
@@ -261,6 +259,7 @@ class Game:
         self.run_vote = None
         self.runout = None
         self.equity = {}
+        self.street_pending = False
         self.current_bet = 0
         self.min_raise = self.bb
         self._acted = set()
@@ -303,10 +302,7 @@ class Game:
         ante = self.settings.ante
         if ante <= 0:
             return
-        posted = 0
-        for p in self.players:
-            if p.status == Status.ACTIVE:
-                posted += p.post_ante(ante)
+        posted = sum(p.post_ante(ante) for p in self.players if p.status == Status.ACTIVE)
         if posted:
             self._log(f"Antes posted ({ante} each, {posted} total)")
 
@@ -338,9 +334,8 @@ class Game:
                 self._log(f"{self.players[straddle_idx].name} straddles {amt}")
 
     def _deal_holes(self) -> None:
-        for p in self.players:
-            if p.in_hand:
-                p.hole = self.deck.deal(2)
+        for p in (q for q in self.players if q.in_hand):
+            p.hole = self.deck.deal(2)
 
     def _begin_betting(self, preflop: bool) -> None:
         self._acted = set()
@@ -460,6 +455,16 @@ class Game:
             else:
                 runs.begin_runout(self, 1)   # non-RIT: still paced
             return
+        if self.phase == Phase.RIVER:
+            self._showdown()             # no more cards -- straight to showdown
+        else:
+            self.street_pending = True   # pause; room reveals next card after 1s
+            self._set_to_act(None)
+
+    def reveal_next_street(self) -> None:
+        if not self.street_pending:
+            return
+        self.street_pending = False
         self._next_street()
 
     def _everyone_matched(self) -> bool:
@@ -468,9 +473,6 @@ class Game:
 
     def _next_street(self) -> None:
         idx = STREET_ORDER.index(self.phase)
-        if self.phase == Phase.RIVER:
-            self._showdown()
-            return
         self.phase = STREET_ORDER[idx + 1]
         self._deal_board_for_phase()
         self._begin_betting(preflop=False)
@@ -504,10 +506,8 @@ class Game:
     def _award_uncontested(self, winner: Player) -> None:
         pot = sum(p.committed for p in self.players)
         winner.stack += pot
-        self.last_results = {"pots": [{
-            "pot": 0, "amount": pot, "winners": [winner.id],
-            "amount_each": pot, "score": None,
-        }]}
+        self.last_results = {"pots": [{"pot": 0, "amount": pot, "score": None,
+                             "winners": [winner.id], "amount_each": pot}]}
         self._log(f"{winner.name} wins {pot} (everyone folded)")
         self._finish_showdown()
 
@@ -542,6 +542,7 @@ class Game:
         self.run_vote = None
         self.runout = None
         self.equity = {}
+        self.street_pending = False
         for p in self.players:
             p.hole = []
             p.round_bet = 0
@@ -562,8 +563,7 @@ class Game:
     def chat(self, pid: str, text: str) -> None:
         name = self.members.get(pid, "Player")
         self._chat_n += 1
-        self.chat_log.append({"n": self._chat_n, "id": pid,
-                              "name": name, "text": text})
+        self.chat_log.append({"n": self._chat_n, "id": pid, "name": name, "text": text})
         self.chat_log = self.chat_log[-100:]
 
     def _set_to_act(self, pid: str | None) -> None:

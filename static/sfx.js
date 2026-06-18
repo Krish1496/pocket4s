@@ -50,8 +50,20 @@
     src.start();
   }
 
+  // Real recorded-style card flip (a WAV sample). Cloned each play so rapid
+  // flop flips overlap naturally instead of cutting each other off.
+  const flipSrc = "/static/snd/flip.wav?v=16";
+  let flipReady = null;
+  function playFlip() {
+    try {
+      const a = (flipReady ? flipReady.cloneNode() : (flipReady = new Audio(flipSrc)));
+      a.volume = 0.55;
+      a.play().catch(() => {});
+    } catch (e) { noise(0.12, 2200, 0.3); }   // fall back to synth
+  }
+
   const SOUNDS = {
-    deal: () => noise(0.12, 2200, 0.3),                 // card flip "fwip"
+    deal: playFlip,                                     // real card-flip sample
     check: () => tone(220, 180, 0.12, "sine", 0.16),    // soft knock
     call: () => tone(440, 540, 0.12, "triangle", 0.18), // chip plink
     raise: () => { tone(520, 720, 0.1, "sawtooth", 0.16);

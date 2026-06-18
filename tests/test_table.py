@@ -343,6 +343,7 @@ def test_hand_name_appears_in_snapshot_for_your_own_cards():
     # Deal a flop so there are >= 5 cards to evaluate.
     g.act(g.to_act, "call")
     g.act(g.to_act, "check")
+    g.reveal_next_street()        # flop is paced now -- flush the 1s beat
     snap = snapshot(g, "a")
     me = next(p for p in snap["players"] if p["id"] == "a")
     assert me["hand_name"] is not None
@@ -467,3 +468,35 @@ def test_uncalled_over_bet_is_returned():
     assert g.get("a").stack == 200   # refunded
     assert g.get("b").stack == 0
     assert sum(p.stack for p in g.players) + g.pot_total() == 600
+
+
+def test_street_is_paced_with_a_beat_before_the_flop():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    g.act(g.to_act, "call")       # button/SB calls
+    g.act(g.to_act, "check")      # BB checks -> preflop done
+    assert g.street_pending and len(g.board) == 0   # flop NOT dealt yet
+    g.reveal_next_street()
+    assert not g.street_pending and len(g.board) == 3
+
+
+def test_three_way_all_in_builds_correct_side_pots():
+    from poker.potting import build_pots
+    g = make_table()
+    for pid, nm, amt in [("a", "A", 100), ("b", "B", 200), ("c", "C", 300)]:
+        g.register_member(pid, nm)
+    g.request_sit("a", 0, 100)
+    g.request_sit("b", 1, 200)
+    g.request_sit("c", 2, 300)
+    g.approve_request("a", "b")
+    g.approve_request("a", "c")
+    # Force everyone all-in by hand: pretend each shoved their stack.
+    for pid, amt in [("a", 100), ("b", 200), ("c", 300)]:
+        g.get(pid).bet(amt)
+    pots = build_pots(g.players)
+    # Main pot = 100*3 (all eligible); side1 = 100*2 (B,C); side2 = 100 (C only).
+    assert [p.amount for p in pots] == [300, 200, 100]
+    assert set(pots[0].eligible) == {"a", "b", "c"}
+    assert set(pots[1].eligible) == {"b", "c"}
+    assert set(pots[2].eligible) == {"c"}

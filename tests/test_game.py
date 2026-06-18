@@ -44,10 +44,13 @@ def test_check_down_to_river():
     # Preflop: button/SB acts first heads-up. Call then check around.
     g.act(g.to_act, "call")   # SB completes
     g.act(g.to_act, "check")  # BB checks
+    g.reveal_next_street()    # flop is paced (1s beat) -- flush it
     assert g.phase == Phase.FLOP
     for _ in range(3):  # flop, turn, river all checked through
         g.act(g.to_act, "check")
         g.act(g.to_act, "check")
+        if g.street_pending:
+            g.reveal_next_street()
     assert g.phase == Phase.SHOWDOWN
     assert len(g.board) == 5
 
@@ -89,6 +92,8 @@ def test_all_in_side_pot():
     # Walk actions until showdown, always calling or shoving.
     guard = 0
     while g.phase != Phase.SHOWDOWN and guard < 30:
+        if g.street_pending:
+            g.reveal_next_street(); guard += 1; continue
         pid = g.to_act
         if pid is None:
             break
