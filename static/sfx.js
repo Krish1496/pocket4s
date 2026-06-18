@@ -52,7 +52,7 @@
 
   // Real recorded-style card flip (a WAV sample). Cloned each play so rapid
   // flop flips overlap naturally instead of cutting each other off.
-  const flipSrc = "/static/snd/flip.wav?v=16";
+  const flipSrc = "/static/snd/flip.wav?v=17";
   let flipReady = null;
   function playFlip() {
     try {
