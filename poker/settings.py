@@ -24,7 +24,7 @@ class TableSettings:
     bounty_72: bool = False        # winning with 7-2 offsuit pays a bounty
     bounty_72_amount: int = 0      # chips each other player pays the winner
     action_timeout: int = 30       # seconds to act before auto check/fold (0 = off)
-    auto_deal: bool = False         # auto-start the next hand after showdown
+    auto_deal: bool = True          # auto-start the next hand after showdown
     run_it_twice: bool = True       # all-in? let players run the board 1-5 times
 
     def to_dict(self) -> dict:
