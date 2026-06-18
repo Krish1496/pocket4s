@@ -189,6 +189,8 @@ body {
 #board { align-items: flex-start; }
 .board-col { display: flex; flex-direction: column; align-items: center; }
 .board-col > * + * { margin-top: calc(var(--card-w) * 1.42 * -0.6); }
+/* Older, overlapped run cards fade back so the newest one on top pops. */
+.board-col .covered { opacity: 0.4; transition: opacity 0.25s ease; }
 
 /* Pre-move bar ---------------------------------------------------------- */
 .premove-bar {

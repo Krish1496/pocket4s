@@ -289,9 +289,18 @@ function renderStackedBoard(board, s) {
     if (col < base) {
       colEl.append(cell(boards[0][col], col, 0));   // shared flop/turn: once
     } else {
+      const cards = [];
       boards.forEach((b, ri) => {
-        if (b[col]) colEl.append(cell(b[col], col, ri));
-        else if (ri === boards.length - 1) colEl.append(placeholderCard());
+        if (b[col]) cards.push(cell(b[col], col, ri));
+        else if (ri === boards.length - 1) cards.push(placeholderCard());
+      });
+      // Dim the older cards that are overlapped -- only the newest real card
+      // in the column stays full opacity.
+      let lastReal = -1;
+      cards.forEach((el, i) => { if (!el.classList.contains("placeholder")) lastReal = i; });
+      cards.forEach((el, i) => {
+        if (i < lastReal && !el.classList.contains("placeholder")) el.classList.add("covered");
+        colEl.append(el);
       });
     }
     board.append(colEl);
