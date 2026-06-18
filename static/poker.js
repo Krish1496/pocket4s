@@ -195,7 +195,7 @@ function computeAnims(s) {
   const a = { boardFrom: s.board.length, dealHoles: false,
               flipReveal: false, potBump: false, winners: {} };
   const newHand = s.hand_no !== PP.prevHandNo;
-  if (newHand) { PP.prevBoardLen = 0; PP.prevRunsDone = 0; }
+  if (newHand) { PP.prevBoardLen = 0; PP.prevRunsDone = 0; PP.shownCells = new Set(); }
   a.boardFrom = PP.prevBoardLen || 0;
   // Run-it-twice: when a NEW run starts, only flip the fresh street(s) for
   // that run -- the shared flop/turn revealed before the all-in stays put
@@ -235,23 +235,80 @@ function renderBoard() {
   const s = PP.state;
   const board = $("board");
   board.innerHTML = "";
-  for (let i = 0; i < 5; i++) {
-    if (s.board[i]) {
-      if (i >= PP.anim.boardFrom) {
-        const step = i - PP.anim.boardFrom;
-        board.append(flipCardEl(s.board[i], false, step * 0.12));
-        if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
+  if (!PP.shownCells) PP.shownCells = new Set();
+
+  if (s.run_count > 1) {
+    renderStackedBoard(board, s);
+  } else {
+    // Normal single board: flip in the freshly-dealt street(s).
+    for (let i = 0; i < 5; i++) {
+      if (s.board[i]) {
+        if (i >= PP.anim.boardFrom) {
+          const step = i - PP.anim.boardFrom;
+          board.append(flipCardEl(s.board[i], false, step * 0.12));
+          if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
+        } else {
+          board.append(cardEl(s.board[i]));
+        }
       } else {
-        board.append(cardEl(s.board[i]));
+        board.append(placeholderCard());
       }
-    } else {
-      board.append(placeholderCard());
     }
   }
   const rabbit = $("rabbitRow");
   rabbit.innerHTML = "";
   (s.rabbit || []).forEach((c) => rabbit.append(cardEl(c, true)));
 }
+
+// Run-it-twice layout: the shared flop stays on one row; each run's NEW
+// cards (turn, river) stack vertically under the previous run's turn/river
+// -- so the board grows DOWN a column, not sideways. Only freshly-dealt
+// cards flip in (tracked in PP.shownCells); already-shown cards stay put.
+function renderStackedBoard(board, s) {
+  let boards, base;
+  if (s.phase === "showdown" && s.results && s.results.runs) {
+    boards = s.results.runs.map((r) => r.board);
+    base = commonPrefixLen(boards);
+  } else {
+    boards = [...(s.run_boards || [])];   // completed runs (full)
+    boards.push(s.board);                 // current run being dealt (partial)
+    base = s.run_base || 0;
+  }
+  let newCells = 0;
+  const cell = (code, col, ri) => {
+    const key = col + ":" + ri;
+    if (col < base || PP.shownCells.has(key)) return cardEl(code);
+    PP.shownCells.add(key);
+    const step = newCells++;
+    if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
+    return flipCardEl(code, false, step * 0.12);
+  };
+  for (let col = 0; col < 5; col++) {
+    const colEl = document.createElement("div");
+    colEl.className = "board-col";
+    if (col < base) {
+      colEl.append(cell(boards[0][col], col, 0));   // shared flop/turn: once
+    } else {
+      boards.forEach((b, ri) => {
+        if (b[col]) colEl.append(cell(b[col], col, ri));
+        else if (ri === boards.length - 1) colEl.append(placeholderCard());
+      });
+    }
+    board.append(colEl);
+  }
+}
+
+// Leading cards identical across every board (the shared flop/turn).
+function commonPrefixLen(boards) {
+  if (!boards.length) return 0;
+  const first = boards[0];
+  let k = 0;
+  for (; k < first.length; k++) {
+    if (!boards.every((b) => b[k] === first[k])) break;
+  }
+  return k;
+}
+window.commonPrefixLen = commonPrefixLen;
 
 function renderSeats() {
   const s = PP.state;

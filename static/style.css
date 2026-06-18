@@ -182,6 +182,14 @@ body {
 .run-current { font-size: 11px; font-weight: 800; color: #fbbf24; margin-top: 2px;
   animation: pulse-pause 1.2s ease-in-out infinite; }
 
+/* Run-it-twice stacked board: each column holds the shared flop card once,
+   then stacks each run's turn / river vertically beneath it. Newer runs
+   CASCADE -- each card sits slightly lower but overlaps the one above by
+   ~60% (you still see the top sliver of each older card). */
+#board { align-items: flex-start; }
+.board-col { display: flex; flex-direction: column; align-items: center; }
+.board-col > * + * { margin-top: calc(var(--card-w) * 1.42 * -0.6); }
+
 /* Pre-move bar ---------------------------------------------------------- */
 .premove-bar {
   margin: 0.75rem auto 0;

@@ -357,52 +357,20 @@
 
   // Stacked boards: completed runs (during the live runout) + winners (showdown).
   window.renderRuns = function () {
+    // The run boards are now drawn ON the main board (shared flop once, then
+    // each run's turn/river stacked beneath -- see renderStackedBoard). Here
+    // we only show the little 'running it Nx' progress note while dealing.
     const s = PP.state;
     const row = $("runsRow");
     row.innerHTML = "";
     if (!(s.run_count > 1)) return;
-    const showdownRuns = s.phase === "showdown" && s.results && s.results.runs;
-    // Source of truth: at showdown use results.runs (with winners); while
-    // running out, show whatever completed boards we have so far.
-    const list = showdownRuns
-      ? s.results.runs
-      : (s.run_boards || []).map((b) => ({ board: b, pots: null }));
-    // The flop (or turn) is SHARED by every run and already sits on the main
-    // board -- so the per-run rows below only show the cards unique to each
-    // run (turn + river, or just the river). Find that shared-prefix length.
-    const base = showdownRuns
-      ? commonPrefixLen(list.map((r) => r.board))
-      : (s.run_base || 0);
-    list.forEach((run, i) => {
-      const line = document.createElement("div");
-      line.className = "run-line";
-      const lbl = document.createElement("span");
-      lbl.className = "run-label";
-      lbl.textContent = "Run " + (i + 1);
-      line.append(lbl);
-      run.board.slice(base).forEach((c) => line.append(cardEl(c, true)));
-      row.append(line);
-    });
-    // While running out, the current run is being dealt on the main board.
-    if (!showdownRuns && (s.run_boards || []).length < s.run_count) {
+    if (s.running_out && (s.run_boards || []).length < s.run_count) {
       const tag = document.createElement("div");
       tag.className = "run-current";
       tag.textContent = `Running it ${s.run_count}\u00d7 \u2014 run ${(s.run_boards || []).length + 1} of ${s.run_count}\u2026`;
       row.append(tag);
     }
   };
-
-  // Number of leading cards identical across every board (the shared flop/
-  // turn revealed before the all-in).
-  function commonPrefixLen(boards) {
-    if (!boards.length) return 0;
-    const first = boards[0];
-    let k = 0;
-    for (; k < first.length; k++) {
-      if (!boards.every((b) => b[k] === first[k])) break;
-    }
-    return k;
-  }
 
   // Keyboard shortcuts: C call, K check, R raise/X check-fold, F fold, H rabbit,
   // M chat. On your turn -> live actions; while waiting -> pre-moves.
