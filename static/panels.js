@@ -367,6 +367,12 @@
     const list = showdownRuns
       ? s.results.runs
       : (s.run_boards || []).map((b) => ({ board: b, pots: null }));
+    // The flop (or turn) is SHARED by every run and already sits on the main
+    // board -- so the per-run rows below only show the cards unique to each
+    // run (turn + river, or just the river). Find that shared-prefix length.
+    const base = showdownRuns
+      ? commonPrefixLen(list.map((r) => r.board))
+      : (s.run_base || 0);
     list.forEach((run, i) => {
       const line = document.createElement("div");
       line.className = "run-line";
@@ -374,14 +380,7 @@
       lbl.className = "run-label";
       lbl.textContent = "Run " + (i + 1);
       line.append(lbl);
-      run.board.forEach((c) => line.append(cardEl(c, true)));
-      if (run.pots) {
-        const win = document.createElement("span");
-        win.className = "run-win";
-        win.textContent = run.pots.map((p) =>
-          `${p.winner_names.join(", ")}${p.hand_name ? " (" + p.hand_name + ")" : ""}`).join(" / ");
-        line.append(win);
-      }
+      run.board.slice(base).forEach((c) => line.append(cardEl(c, true)));
       row.append(line);
     });
     // While running out, the current run is being dealt on the main board.
@@ -392,6 +391,18 @@
       row.append(tag);
     }
   };
+
+  // Number of leading cards identical across every board (the shared flop/
+  // turn revealed before the all-in).
+  function commonPrefixLen(boards) {
+    if (!boards.length) return 0;
+    const first = boards[0];
+    let k = 0;
+    for (; k < first.length; k++) {
+      if (!boards.every((b) => b[k] === first[k])) break;
+    }
+    return k;
+  }
 
   // Keyboard shortcuts: C call, K check, R raise/X check-fold, F fold, H rabbit,
   // M chat. On your turn -> live actions; while waiting -> pre-moves.
