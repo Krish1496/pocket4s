@@ -2,7 +2,7 @@
 #   New + -> Blueprint -> pick this repo. It reads this file automatically.
 services:
   - type: web
-    name: puppy-poker
+    name: puppy-poker-night
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
