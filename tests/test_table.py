@@ -429,6 +429,29 @@ def test_room_paces_the_runout_one_street_at_a_time():
     assert after_one == 4                     # one street revealed on the timer
 
 
+def test_call_amount_is_capped_at_your_stack_vs_an_over_bet():
+    """Facing a 400 shove with only 200 chips, 'to_call' must read 200 (your
+    all-in), not 400 -- you can never put in more than you have."""
+    from server.serialize import snapshot
+    g = make_table(action_timeout=0, run_it_twice=False)
+    g.register_member("a", "Alice")
+    g.register_member("b", "Bob")
+    g.request_sit("a", 0, 400)
+    g.request_sit("b", 1, 200)
+    g.approve_request("a", "b")
+    g.start_hand()
+    if g.to_act == "b":
+        g.act("b", "call")
+    g.act("a", "raise", 400)        # Alice over-shoves 400
+    assert g.to_act == "b"
+    snap = snapshot(g, "b")
+    # Bob posted the BB, so his remaining stack is the cap -- the call shows
+    # that (his all-in), NOT Alice's full 400.
+    assert snap["you"]["to_call"] == g.get("b").stack
+    assert snap["you"]["to_call"] < 400
+    assert snap["you"]["can_check"] is False
+
+
 def test_equity_sums_to_about_100_and_favours_the_better_hand():
     from poker.equity import win_chances
     from poker.cards import Card

@@ -58,7 +58,10 @@ def snapshot(g: Game, viewer_id: str) -> dict:
     is_owner = g.is_owner(viewer_id)
     to_call = min_raise_to = 0
     if viewer and g.to_act == viewer_id:
-        to_call = max(0, g.current_bet - viewer.round_bet)
+        # Cap at your stack: you can never put in more than you have, so a
+        # call vs an over-bet is an all-in for your remaining chips, not the
+        # full bet the other player made.
+        to_call = min(viewer.stack, max(0, g.current_bet - viewer.round_bet))
         min_raise_to = g.current_bet + g.min_raise
 
     results = None
