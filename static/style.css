@@ -1,8 +1,8 @@
 :root {
   --felt: #157f3b;
   --felt-edge: #0f5132;
-  --card-w: 54px;
-  --card-h: 76px;
+  --card-w: 66px;
+  --card-h: 94px;
 }
 
 /* A lighter overall room: soft slate gradient behind the table. */
@@ -30,17 +30,17 @@ body {
   user-select: none;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
-.card .rank { font-size: 20px; }
-.card .suit { font-size: 18px; }
+.card .rank { font-size: 25px; }
+.card .suit { font-size: 22px; }
 .card.red { color: #c81e1e; }
 .card.black { color: #111; }
 .card.back {
   background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #2547a3 6px, #2547a3 12px);
   border: 2px solid #cbd5e1;
 }
-.card.small { --card-w: 34px; --card-h: 48px; }
-.card.small .rank { font-size: 13px; }
-.card.small .suit { font-size: 12px; }
+.card.small { --card-w: 46px; --card-h: 64px; }
+.card.small .rank { font-size: 18px; }
+.card.small .suit { font-size: 16px; }
 .card.placeholder {
   background: transparent;
   border: 2px dashed rgba(255, 255, 255, 0.25);
@@ -49,6 +49,11 @@ body {
 
 /* Felt table ------------------------------------------------------------- */
 .felt {
+  /* Default (desktop / landscape): a wide oval that fills the column. */
+  width: min(1080px, 94vw);
+  aspect-ratio: 1.6 / 1;
+  max-height: 70vh;
+  margin: 0 auto;
   background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-edge) 100%);
   border: 14px solid #3b2417;
   border-radius: 48% / 60%;
@@ -75,8 +80,8 @@ body {
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
 }
 .seat.folded { opacity: 0.45; }
-.seat .name { font-size: 13px; font-weight: 700; }
-.seat .stack { font-size: 12px; color: #fcd34d; }
+.seat .name { font-size: 15px; font-weight: 700; }
+.seat .stack { font-size: 14px; color: #fcd34d; }
 .seat .badge {
   position: absolute;
   top: -10px;
@@ -105,7 +110,7 @@ body {
   padding: 3px 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
-.seat .cards { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; min-height: 48px; }
+.seat .cards { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; min-height: 64px; }
 
 .disconnected-dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 999px;
@@ -397,7 +402,7 @@ body {
   width: var(--card-w); height: var(--card-h);
   perspective: 700px; display: inline-block;
 }
-.flip3d.small { --card-w: 34px; --card-h: 48px; }
+.flip3d.small { --card-w: 46px; --card-h: 64px; }
 .flip-inner {
   position: relative; width: 100%; height: 100%;
   transform-style: preserve-3d;
@@ -472,24 +477,26 @@ body {
 }
 
 /* Mobile -----------------------------------------------------------------
-   Shrink cards + seats so 8 pods don't overlap, and dock the action bar to
-   the bottom of the screen where a thumb can reach it. */
+   Cards + names stay BIG and readable; the felt grows to fill the screen in
+   portrait (see the portrait block below). The action bar docks to the
+   bottom where a thumb can reach it. */
 @media (max-width: 700px) {
-  :root { --card-w: 30px; --card-h: 42px; }
-  .card .rank { font-size: 13px; }
-  .card .suit { font-size: 12px; }
-  .card.small { --card-w: 22px; --card-h: 31px; }
-  .flip3d.small { --card-w: 22px; --card-h: 31px; }
-  .card.small .rank { font-size: 10px; }
-  .card.small .suit { font-size: 9px; }
-  .felt { border-width: 8px; }
-  .seat { width: 84px; }
-  .seat .pod { padding: 3px 5px; border-radius: 9px; }
-  .seat .name { font-size: 10px; }
-  .seat .stack { font-size: 9px; }
-  .seat .cards { gap: 2px; margin-bottom: 2px; min-height: 32px; }
-  .seat .badge { width: 18px; height: 18px; font-size: 9px; }
-  .seat-timer { width: 18px; height: 18px; font-size: 9px; }
+  :root { --card-w: 52px; --card-h: 74px; }
+  .card .rank { font-size: 21px; }
+  .card .suit { font-size: 18px; }
+  .card.small { --card-w: 40px; --card-h: 56px; }
+  .flip3d.small { --card-w: 40px; --card-h: 56px; }
+  .card.small .rank { font-size: 16px; }
+  .card.small .suit { font-size: 14px; }
+  .felt { border-width: 9px; }
+  .seat { width: 92px; }
+  .seat .pod { padding: 4px 5px; border-radius: 10px; }
+  .seat .name { font-size: 13px; }
+  .seat .stack { font-size: 12px; }
+  .seat .cards { gap: 2px; margin-bottom: 3px; min-height: 56px; }
+  .seat .badge { width: 20px; height: 20px; font-size: 10px; }
+  .seat-timer { width: 20px; height: 20px; font-size: 10px; }
+  main { padding-left: 0.4rem; padding-right: 0.4rem; padding-top: 0.4rem; }
 
   .action-bar {
     position: sticky; bottom: 0; z-index: 30;
@@ -499,5 +506,22 @@ body {
   }
   .main-row .act-btn { padding: 0.75rem 0.4rem; font-size: 0.95rem; }
   .quick { padding: 0.55rem 0.2rem; }
-  .pot-label { font-size: 1.25rem; }
+  .pot-label { font-size: 1.4rem; }
+}
+
+/* Portrait phones: turn the felt into a TALL oval that fills the screen,
+   instead of a short letterbox stranded in the middle. Driven by width so
+   the 5-card board always fits; height follows to eat the vertical space. */
+@media (max-width: 700px) and (orientation: portrait) {
+  main { padding-bottom: 0.3rem; }
+  .felt {
+    width: 96vw;
+    height: min(74dvh, 150vw);   /* tall oval; dvh dodges the URL bar */
+    aspect-ratio: auto;
+    max-height: none;
+    border-radius: 44% / 50%;
+  }
+  /* Tuck the board cards a touch tighter so 5 fit across the narrow felt. */
+  #board { gap: 0.25rem; }
+  :root { --card-w: 50px; --card-h: 71px; }
 }

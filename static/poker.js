@@ -254,11 +254,16 @@ function renderSeats() {
 
   const n = s.seat_count;
   const mySeat = s.you.seat;
+  // On a tall portrait phone the felt is narrow, so pull the side seats in
+  // (smaller horizontal radius) and spread them vertically.
+  const portrait = window.matchMedia("(max-width: 700px) and (orientation: portrait)").matches;
+  const rx = portrait ? 38 : 46;
+  const ry = portrait ? 46 : 44;
   for (let visual = 0; visual < n; visual++) {
     const seatNum = mySeat != null ? (mySeat + visual) % n : visual;
     const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
-    const x = 50 + 46 * Math.cos(angle);
-    const y = 50 + 44 * Math.sin(angle);
+    const x = 50 + rx * Math.cos(angle);
+    const y = 50 + ry * Math.sin(angle);
     const occupant = bySeat[seatNum];
     felt.append(occupant ? seatEl(occupant, x, y) : openSeatEl(seatNum, x, y));
   }
@@ -579,6 +584,9 @@ function wireCore() {
   wireHotkeys();
   $("board").addEventListener("click", tryRabbit);
 }
+
+// Reposition seats when the phone rotates / the window resizes.
+window.addEventListener("resize", () => { if (PP.state) renderSeats(); });
 
 function tryRabbit() {
   const s = PP.state;
