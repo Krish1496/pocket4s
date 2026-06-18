@@ -12,6 +12,7 @@
     const owner = s.you.is_owner;
     show($("startBtn"), owner && s.phase === "waiting");
     show($("nextBtn"), owner && s.phase === "showdown");
+    renderShowCards(s);
     const pause = $("pauseBtn");
     show(pause, owner);
     pause.textContent = s.paused ? "\u25B6 Resume" : "\u23F8 Pause";
@@ -44,6 +45,30 @@
       else msg.textContent = "";
     } else { msg.textContent = ""; }
   }
+
+  // Show-your-cards controls (only at showdown, when you still hold cards).
+  // A card already shown can't be un-shown, so its button greys out.
+  function renderShowCards(s) {
+    const bar = $("showCardsBar");
+    const can = !!(s.you && s.you.can_show);
+    show(bar, can);
+    if (!can) return;
+    const shown = s.you.shown || [];
+    const b1 = $("show1Btn"), b2 = $("show2Btn"), bb = $("showBothBtn");
+    b1.disabled = shown.includes(0);
+    b2.disabled = shown.includes(1);
+    bb.disabled = shown.includes(0) && shown.includes(1);
+  }
+  window.canShowCards = (s) => !!(s && s.you && s.you.can_show);
+  // Send a show-cards request for the given hole-card indices, skipping any
+  // already shown so we don't spam the table log.
+  window.showCards = function (which) {
+    const s = PP.state;
+    if (!canShowCards(s)) return;
+    const shown = (s.you.shown || []);
+    const todo = which.filter((i) => !shown.includes(i));
+    if (todo.length) PP.send({ type: "show_cards", which: todo });
+  };
 
   // ---- pre-move bar (queue an action while waiting) -------------------
   function renderPremove(s) {
@@ -257,6 +282,9 @@
 
     $("startBtn").onclick = () => PP.send({ type: "start" });
     $("nextBtn").onclick = () => PP.send({ type: "next_hand" });
+    $("show1Btn").onclick = () => window.showCards([0]);
+    $("show2Btn").onclick = () => window.showCards([1]);
+    $("showBothBtn").onclick = () => window.showCards([0, 1]);
     $("standBtn").onclick = () => { if (confirm("Stand up and cash out?")) PP.send({ type: "stand_up" }); };
 
     $("awayBtn").onclick = () =>
@@ -389,6 +417,12 @@
       }
       if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
       if (typing) return;
+      // Show-your-cards at showdown: 1 = first card, 2 = second, 3 = both.
+      if ((key === "1" || key === "2" || key === "3") && canShowCards(PP.state)) {
+        e.preventDefault();
+        window.showCards(key === "1" ? [0] : key === "2" ? [1] : [0, 1]);
+        return;
+      }
       if (key === "h") { e.preventDefault(); tryRabbit(); return; }
       const bar = $("actionBar");
       if (bar.classList.contains("hidden")) {

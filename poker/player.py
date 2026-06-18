@@ -21,6 +21,9 @@ class Player:
         self.stack = stack
         self.status = Status.SITTING_OUT
         self.hole: list[Card] = []
+        # Hole-card indices this player chose to voluntarily SHOW after the
+        # hand ended (0 and/or 1). Reset each hand.
+        self.shown: set[int] = set()
         # Chips put in during the current betting round (street).
         self.round_bet = 0
         # Total chips committed across the whole hand (drives side pots).
@@ -48,6 +51,7 @@ class Player:
             self.stack += self.pending_topup
             self.pending_topup = 0
         self.hole = []
+        self.shown = set()
         self.round_bet = 0
         self.committed = 0
         # Players with chips who aren't sitting out get dealt in -- even if

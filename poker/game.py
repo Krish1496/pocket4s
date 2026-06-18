@@ -60,6 +60,10 @@ class Game:
         self._straddle_idx: int | None = None
         self.last_results: dict | None = None
         self.hand_no = 0
+        # True only when the hand reached an actual (contested) showdown or
+        # an all-in runout -- i.e. cards are auto-revealed. A fold-out win
+        # leaves it False, so the winner's cards stay hidden unless shown.
+        self.went_to_showdown = False
 
         self.turn_deadline: float | None = None
         self.turn_seq = 0
@@ -252,6 +256,7 @@ class Game:
         if not self.can_start():
             raise ValueError("Need at least 2 players with chips to start")
         self.hand_no += 1
+        self.went_to_showdown = False
         self.deck = Deck(seed=self._seed)
         self.board = []
         self.rabbit_board = []
@@ -489,6 +494,7 @@ class Game:
         return runs.reveal_step(self)   # room calls this on a timer
 
     def _showdown(self) -> None:
+        self.went_to_showdown = True   # contested -> hands auto-reveal
         self.last_results = settle(self.players, self.board)
         for r in self.last_results["pots"]:
             names = ", ".join(self.get(w).name for w in r["winners"])
@@ -529,6 +535,23 @@ class Game:
 
     def auto_advance(self) -> bool:
         return autoplay.auto_advance(self)
+
+    def show_cards(self, pid: str, which) -> None:
+        """After a hand ends, let a player voluntarily reveal one or both of
+        their hole cards to the whole table. `which` is an iterable of card
+        indices (0 and/or 1)."""
+        if self.phase != Phase.SHOWDOWN:
+            raise ValueError("You can only show cards after the hand ends")
+        p = self.get(pid)
+        if p is None or not p.hole:
+            raise ValueError("You have no cards to show")
+        idxs = sorted({int(i) for i in which if int(i) in (0, 1)})
+        new = [i for i in idxs if i not in p.shown]
+        if not new:
+            return
+        p.shown.update(new)
+        codes = " ".join(p.hole[i].code for i in sorted(p.shown))
+        self._log(f"{p.name} shows {codes}")
 
     def set_paused(self, pid: str, value: bool) -> None:
         self._require_owner(pid)

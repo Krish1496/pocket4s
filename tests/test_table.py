@@ -523,3 +523,54 @@ def test_three_way_all_in_builds_correct_side_pots():
     assert set(pots[0].eligible) == {"a", "b", "c"}
     assert set(pots[1].eligible) == {"b", "c"}
     assert set(pots[2].eligible) == {"c"}
+
+
+def test_foldout_winner_cards_hidden_until_shown():
+    """Win by everyone folding -> your cards stay hidden, but you can show
+    one or both on demand (and only at showdown)."""
+    from server.serialize import snapshot
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    g.act(g.to_act, "fold")                 # heads-up fold -> fold-out win
+    assert g.phase == Phase.SHOWDOWN
+    assert g.went_to_showdown is False      # not a contested showdown
+    winner = next(p for p in g.players if p.in_hand)
+    other = next(p for p in g.players if p is not winner)
+    # Opponent sees the winner's cards face-DOWN by default.
+    snap = snapshot(g, other.id)
+    wv = next(p for p in snap["players"] if p["id"] == winner.id)
+    assert wv["hole"] == ["back", "back"]
+    # Winner shows just their first card.
+    g.show_cards(winner.id, [0])
+    snap = snapshot(g, other.id)
+    wv = next(p for p in snap["players"] if p["id"] == winner.id)
+    assert wv["hole"][0] == winner.hole[0].code and wv["hole"][1] == "back"
+    assert wv["shown"] == [0]
+    # Then shows the second too -> both visible.
+    g.show_cards(winner.id, [1])
+    snap = snapshot(g, other.id)
+    wv = next(p for p in snap["players"] if p["id"] == winner.id)
+    assert wv["hole"] == [c.code for c in winner.hole]
+
+
+def test_cannot_show_cards_before_showdown():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    with pytest.raises(ValueError):
+        g.show_cards(g.to_act, [0, 1])
+
+
+def test_shown_resets_each_hand():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    g.act(g.to_act, "fold")
+    winner = next(p for p in g.players if p.in_hand)
+    g.show_cards(winner.id, [0, 1])
+    assert winner.shown == {0, 1}
+    g.end_hand()
+    g.start_hand()
+    assert all(p.shown == set() for p in g.players)   # cleared for the new hand
+

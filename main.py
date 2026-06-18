@@ -134,6 +134,11 @@ async def _handle(room, pid: str, msg: dict) -> None:
                 g.chat(pid, text)
         elif t == "rabbit":
             g.reveal_rabbit(pid)
+        elif t == "show_cards":
+            which = msg.get("which", [])
+            if not isinstance(which, list):
+                which = [which]
+            g.show_cards(pid, which)
         elif t == "premove":
             g.set_premove(pid, msg.get("move"))
         elif t == "away":

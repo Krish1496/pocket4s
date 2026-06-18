@@ -28,10 +28,23 @@ def _hand_name(g: Game, p) -> str | None:
 
 
 def _player_view(g: Game, p, viewer_id: str) -> dict:
-    show = (p.id == viewer_id
-            or (g.phase == Phase.SHOWDOWN and p.in_hand and p.hole)
-            or (g.run_vote and p.in_hand and p.hole)     # cards up while voting
-            or (g.runout and p.in_hand and p.hole))      # ...and during the runout
+    own = p.id == viewer_id
+    # Cards auto-reveal only on a real (contested) showdown or all-in runout,
+    # or while the run-it-twice vote/runout is in progress.
+    auto = ((g.phase == Phase.SHOWDOWN and g.went_to_showdown and p.in_hand and p.hole)
+            or (g.run_vote and p.in_hand and p.hole)
+            or (g.runout and p.in_hand and p.hole))
+    full = own or auto
+    if full:
+        hole = [c.code for c in p.hole]
+    elif p.shown:
+        # Voluntarily showing one or both cards; the rest stay face-down.
+        hole = [p.hole[i].code if i in p.shown else "back"
+                for i in range(len(p.hole))]
+    elif p.in_hand and p.hole:
+        hole = ["back", "back"]      # still in hand / fold-out winner, not shown
+    else:
+        hole = []                     # folded & mucked, or not dealt in
     return {
         "id": p.id,
         "name": p.name,
@@ -46,9 +59,9 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
         "is_button": g.players.index(p) == g.button if g.players else False,
         "is_turn": g.to_act == p.id,
         "is_owner": g.owner == p.id,
-        "hole": [c.code for c in p.hole] if show else (
-            ["back", "back"] if p.in_hand and p.hole else []),
-        "hand_name": _hand_name(g, p) if show else None,
+        "hole": hole,
+        "shown": sorted(p.shown),
+        "hand_name": _hand_name(g, p) if full else None,
         "win_pct": g.equity.get(p.id) if g.equity and p.in_hand else None,
     }
 
@@ -133,6 +146,9 @@ def snapshot(g: Game, viewer_id: str) -> dict:
             "away": viewer.away if viewer else False,
             "auto_check_fold": viewer.auto_check_fold if viewer else False,
             "premove": viewer.premove if viewer else None,
+            # Can I show my cards right now, and which have I already shown?
+            "can_show": bool(viewer and g.phase == Phase.SHOWDOWN and viewer.hole),
+            "shown": sorted(viewer.shown) if viewer else [],
         },
         "can_start": g.can_start(),
         "hand_log": g.hand_log[-40:],
