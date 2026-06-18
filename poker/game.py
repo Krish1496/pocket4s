@@ -6,7 +6,7 @@ from enum import Enum
 
 from .cards import Deck
 from .player import Player, Status
-from .potting import settle
+from .potting import settle, return_uncalled
 from .evaluator import describe
 from .settings import TableSettings, SEAT_COUNT
 from .ledger import Ledger
@@ -434,8 +434,7 @@ class Game:
         if self._betting_round_complete():
             self._maybe_advance_street()
         else:
-            nxt_idx = next(i for i, p in enumerate(self.players)
-                           if p.id == self.to_act)
+            nxt_idx = next(i for i, p in enumerate(self.players) if p.id == self.to_act)
             self._set_to_act(self._first_actor(nxt_idx + 1))
             if self.to_act is None:
                 self._maybe_advance_street()
@@ -453,6 +452,7 @@ class Game:
 
     def _maybe_advance_street(self) -> None:
         if len(self._active_actors()) <= 1 and self._everyone_matched():
+            return_uncalled(self)        # refund any over-bet nobody could match
             if len(self.board) >= 5:
                 self._showdown()
             elif runs.should_offer(self):

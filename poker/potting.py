@@ -18,6 +18,28 @@ class Pot:
     eligible: list[str] = field(default_factory=list)  # player ids who can win
 
 
+def return_uncalled(game) -> None:
+    """Hand back the slice of a bet that exceeded what anyone could call.
+    e.g. you shove 400 into a foe with only 200 chips -- you get 200 back,
+    so the pot is 400 (not 600). Call this once betting closes for the hand.
+    """
+    live = [p for p in game.players if p.in_hand]
+    if len(live) < 2:
+        return
+    bets = sorted((p.round_bet for p in live), reverse=True)
+    top = [p for p in live if p.round_bet == bets[0]]
+    if bets[0] <= bets[1] or len(top) != 1:
+        return                       # bet was matched (or tied) -- nothing owed
+    p, refund = top[0], bets[0] - bets[1]
+    p.stack += refund
+    p.round_bet -= refund
+    p.committed -= refund
+    if p.stack > 0 and p.status == Status.ALL_IN:
+        p.status = Status.ACTIVE      # got chips back -> no longer all-in
+    game.current_bet = bets[1]
+    game._log(f"Uncalled {refund} returned to {p.name}")
+
+
 def build_pots(players: list[Player]) -> list[Pot]:
     """Build main + side pots from each player's `committed` chips."""
     contrib = {p.id: p.committed for p in players if p.committed > 0}

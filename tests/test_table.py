@@ -448,3 +448,22 @@ def test_equity_exposed_during_all_in_runout():
     _drive_all_in_heads_up(g)
     assert g.equity and set(g.equity) == {"a", "b"}
     assert abs(sum(g.equity.values()) - 100.0) < 1.0
+
+
+def test_uncalled_over_bet_is_returned():
+    """Shoving 400 into a foe who only has 200 must refund the extra 200."""
+    g = make_table(action_timeout=0, run_it_twice=False)
+    g.register_member("a", "Alice")
+    g.register_member("b", "Bob")
+    g.request_sit("a", 0, 400)      # owner: instant, deep stack
+    g.request_sit("b", 1, 200)
+    g.approve_request("a", "b")
+    g.start_hand()
+    if g.to_act == "b":
+        g.act("b", "call")          # b limps the button so a (BB) can shove
+    g.act("a", "raise", 400)        # a over-shoves 400
+    g.act("b", "call")              # b can only call 200 (all-in)
+    assert g.pot_total() == 400      # NOT 600 -- the uncalled 200 came back
+    assert g.get("a").stack == 200   # refunded
+    assert g.get("b").stack == 0
+    assert sum(p.stack for p in g.players) + g.pot_total() == 600
