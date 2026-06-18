@@ -195,9 +195,17 @@ function computeAnims(s) {
   const a = { boardFrom: s.board.length, dealHoles: false,
               flipReveal: false, potBump: false, winners: {} };
   const newHand = s.hand_no !== PP.prevHandNo;
-  if (newHand) { PP.prevBoardLen = 0; }
+  if (newHand) { PP.prevBoardLen = 0; PP.prevRunsDone = 0; }
   a.boardFrom = PP.prevBoardLen || 0;
-  if (s.board.length < (PP.prevBoardLen || 0)) a.boardFrom = 0;  // next run: deal a fresh flop
+  // Run-it-twice: when a NEW run starts, only flip the fresh street(s) for
+  // that run -- the shared flop/turn revealed before the all-in stays put
+  // and must NOT re-flip. (Detect the new run by the completed-runs count,
+  // which is robust even when every run is the same length, e.g. a turn
+  // all-in where each run only adds the river.)
+  const runsDone = (s.run_boards || []).length;
+  if (s.running_out && runsDone > (PP.prevRunsDone || 0)) {
+    a.boardFrom = s.run_base || 0;
+  }
   a.dealHoles = newHand && s.phase === "preflop";
   a.flipReveal = s.phase === "showdown" && PP.prevPhase !== "showdown";
   a.potBump = s.pot > (PP.prevPot || 0);
@@ -216,6 +224,7 @@ function computeAnims(s) {
     PP._prevLeft = mine ? left : null;
   }
   PP.prevBoardLen = s.board.length;
+  PP.prevRunsDone = runsDone;
   if (window.detectFlashes) window.detectFlashes(s);
   PP.prevHandNo = s.hand_no;
   PP.prevPhase = s.phase;

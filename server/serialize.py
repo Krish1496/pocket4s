@@ -106,6 +106,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
         "run_boards": [[c.code for c in b] for b in g.run_boards],
         "run_count": (g.runout["n"] if g.runout else
                       (g.last_results.get("run_count", 1) if g.last_results else 1)),
+        "run_base": (g.runout["base"] if g.runout else 0),  # shared cards per run
         "pot": g.pot_total(),
         "current_bet": g.current_bet,
         "settings": g.settings.to_dict(),

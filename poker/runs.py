@@ -96,7 +96,8 @@ def begin_runout(game, n: int) -> None:
         boards.append(b)
     frames = [(ri, b[:t]) for ri, b in enumerate(boards)
               for t in (3, 4, 5) if t > len(base)]
-    game.runout = {"boards": boards, "frames": frames, "i": 0, "n": n}
+    game.runout = {"boards": boards, "frames": frames, "i": 0, "n": n,
+                   "base": len(base)}   # cards shared by every run (already shown)
     game._set_to_act(None)
     if n > 1:
         game._log(f"All in -- running it {n} times")
