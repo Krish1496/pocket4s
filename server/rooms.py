@@ -181,7 +181,7 @@ class Room:
                     return  # last street revealed -> showdown
 
     # --- auto-deal ------------------------------------------------------
-    AUTODEAL_DELAY = 4.5  # seconds to admire the result before the next hand
+    AUTODEAL_DELAY = 6.0  # seconds to admire the result / show cards before the next hand
 
     def _arm_autodeal(self) -> None:
         """If auto-deal is on and we're at showdown, schedule the next hand."""

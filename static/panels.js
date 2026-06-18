@@ -280,12 +280,24 @@
     $("drawerClose").onclick = closeDrawer;
     $("drawerScrim").onclick = closeDrawer;
 
+    // Slide-out table menu (secondary controls).
+    const sideMenu = $("sideMenu"), menuScrim = $("menuScrim");
+    const setMenu = (open) => {
+      sideMenu.classList.toggle("open", open);
+      show(menuScrim, open);
+      sideMenu.setAttribute("aria-hidden", open ? "false" : "true");
+      $("menuToggle").setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    window.closeSideMenu = () => setMenu(false);
+    $("menuToggle").onclick = () => setMenu(!sideMenu.classList.contains("open"));
+    menuScrim.onclick = () => setMenu(false);
+
     $("startBtn").onclick = () => PP.send({ type: "start" });
     $("nextBtn").onclick = () => PP.send({ type: "next_hand" });
     $("show1Btn").onclick = () => window.showCards([0]);
     $("show2Btn").onclick = () => window.showCards([1]);
     $("showBothBtn").onclick = () => window.showCards([0, 1]);
-    $("standBtn").onclick = () => { if (confirm("Stand up and cash out?")) PP.send({ type: "stand_up" }); };
+    $("standBtn").onclick = () => { if (window.closeSideMenu) window.closeSideMenu(); if (confirm("Stand up and cash out?")) PP.send({ type: "stand_up" }); };
 
     $("awayBtn").onclick = () =>
       PP.send({ type: "away", value: !PP.state.you.away });
@@ -314,6 +326,7 @@
       });
 
     $("topupBtn").onclick = () => {
+      if (window.closeSideMenu) window.closeSideMenu();
       $("topupAmount").value = PP.state.settings.default_buyin;
       show($("topupModal"), true);
     };
@@ -415,7 +428,7 @@
         setTimeout(() => { const c = $("chatInput"); if (c) c.focus(); }, 60);
         return;
       }
-      if (key === "escape") { if (window.closeDrawer) window.closeDrawer(); return; }
+      if (key === "escape") { if (window.closeSideMenu) window.closeSideMenu(); if (window.closeDrawer) window.closeDrawer(); return; }
       if (typing) return;
       // Show-your-cards at showdown: 1 = first card, 2 = second, 3 = both.
       if ((key === "1" || key === "2" || key === "3") && canShowCards(PP.state)) {

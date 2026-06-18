@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Puppy Poker - Table</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css?v=25" />
+  <link rel="stylesheet" href="/static/style.css?v=26" />
 </head>
 <body class="min-h-screen bg-slate-600 text-slate-50">
 
@@ -95,9 +95,12 @@
   </div>
 
   <header class="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-800">
-    <div class="min-w-0">
-      <h1 class="font-bold text-lg truncate" id="tableName">Poker Table</h1>
-      <p class="text-xs text-slate-400 truncate" id="blindsInfo"></p>
+    <div class="flex items-center gap-2 min-w-0">
+      <button id="menuToggle" class="menu-toggle" aria-label="Table menu" aria-expanded="false">&#9776;</button>
+      <div class="min-w-0">
+        <h1 class="font-bold text-lg truncate" id="tableName">Poker Table</h1>
+        <p class="text-xs text-slate-400 truncate" id="blindsInfo"></p>
+      </div>
     </div>
     <div class="flex items-center justify-end flex-wrap gap-2">
       <span id="connDot" class="text-xs text-slate-400">connecting...</span>
@@ -109,6 +112,18 @@
       <button id="shareBtn" class="btn-muted text-sm">Invite</button>
     </div>
   </header>
+
+  <!-- Slide-out table menu (secondary controls live here to save space) -->
+  <div id="menuScrim" class="menu-scrim hidden"></div>
+  <aside id="sideMenu" class="side-menu" aria-hidden="true">
+    <p class="side-menu-title">Table controls</p>
+    <button id="topupBtn" class="btn-muted hidden">Add chips</button>
+    <button id="awayBtn" class="btn-muted hidden">Away</button>
+    <button id="acfBtn" class="btn-muted hidden">Check/Fold mode</button>
+    <button id="pauseBtn" class="btn-muted hidden">Pause</button>
+    <button id="standBtn" class="btn-muted hidden">Stand up</button>
+    <button id="soundBtn" class="btn-muted" title="Toggle sound effects">&#x1F50A; Sound</button>
+  </aside>
 
   <main class="px-3 py-4 lg:px-6">
     <!-- Host chip-management popover (filled + positioned by panels.js) -->
@@ -173,12 +188,6 @@
           <button id="show2Btn" class="btn-muted" title="Show your 2nd card (key 2)">Card 2</button>
           <button id="showBothBtn" class="btn-muted" title="Show both cards (key 3)">Both</button>
         </span>
-        <button id="pauseBtn" class="btn-muted hidden">Pause</button>
-        <button id="topupBtn" class="btn-muted hidden">Add chips</button>
-        <button id="awayBtn" class="btn-muted hidden">Away</button>
-        <button id="soundBtn" class="btn-muted" title="Toggle sound effects">&#x1F50A; Sound</button>
-        <button id="acfBtn" class="btn-muted hidden">Check/Fold mode</button>
-        <button id="standBtn" class="btn-muted hidden">Stand up</button>
         <p id="waitMsg" class="text-slate-400 text-sm w-full text-center"></p>
       </div>
     </section>
@@ -212,8 +221,8 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/sfx.js?v=25"></script>
-  <script src="/static/poker.js?v=25"></script>
-  <script src="/static/panels.js?v=25"></script>
+  <script src="/static/sfx.js?v=26"></script>
+  <script src="/static/poker.js?v=26"></script>
+  <script src="/static/panels.js?v=26"></script>
 </body>
 </html>

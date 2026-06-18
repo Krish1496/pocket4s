@@ -29,9 +29,10 @@ def _hand_name(g: Game, p) -> str | None:
 
 def _player_view(g: Game, p, viewer_id: str) -> dict:
     own = p.id == viewer_id
-    # Cards auto-reveal only on a real (contested) showdown or all-in runout,
-    # or while the run-it-twice vote/runout is in progress.
-    auto = ((g.phase == Phase.SHOWDOWN and g.went_to_showdown and p.in_hand and p.hole)
+    # Cards auto-reveal only for hands the showdown logic decided must show
+    # (the aggressor + anyone who out-showed them), or while the run-it-twice
+    # vote/runout is in progress (everyone's cards are up then).
+    auto = ((g.phase == Phase.SHOWDOWN and p.id in g.showdown_reveals)
             or (g.run_vote and p.in_hand and p.hole)
             or (g.runout and p.in_hand and p.hole))
     full = own or auto

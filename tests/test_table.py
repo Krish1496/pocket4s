@@ -574,3 +574,50 @@ def test_shown_resets_each_hand():
     g.start_hand()
     assert all(p.shown == set() for p in g.players)   # cleared for the new hand
 
+
+def test_showdown_loser_mucks_winner_and_aggressor_revealed():
+    """Aggressor shows first; a later player only auto-reveals if they beat
+    the best hand shown. The beaten caller mucks."""
+    from poker.cards import Card
+    g = make_table()
+    _seat_two(g)
+    g.start_hand()
+    a, b = g.get("a"), g.get("b")
+    g.board = [Card.from_str(c) for c in ("Ah", "Kd", "7c", "2s", "9h")]
+    a.hole = [Card.from_str("As"), Card.from_str("Ac")]   # trip aces (winner)
+    b.hole = [Card.from_str("Qd"), Card.from_str("Jc")]   # just ace-high (loser)
+    # Case 1: loser (b) was the last aggressor -> shows first and loses; the
+    # winner (a) out-shows -> both revealed.
+    g.last_aggressor = "b"
+    g._compute_showdown_reveals()
+    assert g.showdown_reveals == {"a", "b"}
+    # Case 2: winner (a) was the aggressor -> shows first; b is beaten and
+    # mucks (not auto-revealed).
+    g.last_aggressor = "a"
+    g._compute_showdown_reveals()
+    assert g.showdown_reveals == {"a"}
+
+
+def test_folded_player_cards_never_auto_revealed():
+    from server.serialize import snapshot
+    g = make_table(action_timeout=0)
+    g.register_member("a", "Alice"); g.register_member("b", "Bob")
+    g.register_member("c", "Cara")
+    g.request_sit("a", 0, 200); g.request_sit("b", 1, 200); g.request_sit("c", 2, 200)
+    g.approve_request("a", "b"); g.approve_request("a", "c")
+    g.start_hand()
+    folder = g.get(g.to_act)
+    g.act(folder.id, "fold")          # one player folds; hand continues
+    # Drive the rest to showdown by calling/checking it down.
+    while g.phase != Phase.SHOWDOWN:
+        if g.street_pending:
+            g.reveal_next_street(); continue
+        pid = g.to_act
+        if pid is None:
+            break
+        p = g.get(pid)
+        g.act(pid, "check" if g.current_bet - p.round_bet == 0 else "call")
+    snap = snapshot(g, next(i for i in ("a", "b", "c") if i != folder.id))
+    fv = next(p for p in snap["players"] if p["id"] == folder.id)
+    assert fv["hole"] == []           # folded -> mucked, never auto-shown
+

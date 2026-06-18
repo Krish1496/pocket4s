@@ -192,6 +192,36 @@ body {
 /* Older, overlapped run cards fade back so the newest one on top pops. */
 .board-col .covered { opacity: 0.4; transition: opacity 0.25s ease; }
 
+/* Slide-out table menu (hamburger top-left -> secondary controls) ------- */
+.menu-toggle {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0; border: 1px solid #334155;
+  cursor: pointer;
+}
+.menu-toggle:hover { background: rgba(30, 41, 59, 0.9); }
+.menu-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 55; }
+.side-menu {
+  position: fixed; top: 0; left: 0; height: 100%;
+  width: 240px; max-width: 82vw; z-index: 56;
+  background: #0f172a; border-right: 1px solid #334155;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 60px 14px 16px;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+}
+.side-menu.open { transform: translateX(0); }
+.side-menu .btn-muted, .side-menu .btn-primary { width: 100%; text-align: left; }
+.side-menu-title {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #94a3b8; margin-bottom: 2px;
+}
+
 /* Pre-move bar ---------------------------------------------------------- */
 .premove-bar {
   margin: 0.75rem auto 0;

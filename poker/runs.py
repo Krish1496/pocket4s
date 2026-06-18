@@ -137,6 +137,7 @@ def finish_runout(game) -> None:
 def _finalize(game) -> None:
     ro = game.runout
     game.went_to_showdown = True   # all-in runout reveals every live hand
+    game.showdown_reveals = {p.id for p in game.players if p.in_hand and p.hole}
     boards, n = ro["boards"], ro["n"]
     game.run_boards = boards
     game.board = boards[0]

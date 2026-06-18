@@ -7,7 +7,7 @@ from enum import Enum
 from .cards import Deck
 from .player import Player, Status
 from .potting import settle, return_uncalled
-from .evaluator import describe
+from .evaluator import describe, best_hand
 from .settings import TableSettings, SEAT_COUNT
 from .ledger import Ledger
 from . import extras
@@ -64,6 +64,12 @@ class Game:
         # an all-in runout -- i.e. cards are auto-revealed. A fold-out win
         # leaves it False, so the winner's cards stay hidden unless shown.
         self.went_to_showdown = False
+        # Last player to bet/raise on the current street (resets each street).
+        # Drives showdown reveal ORDER. None = street was checked through.
+        self.last_aggressor: str | None = None
+        # Player ids whose hands are auto-revealed at showdown (the shower
+        # plus everyone who out-showed them; losers after the winner muck).
+        self.showdown_reveals: set[str] = set()
 
         self.turn_deadline: float | None = None
         self.turn_seq = 0
@@ -257,6 +263,8 @@ class Game:
             raise ValueError("Need at least 2 players with chips to start")
         self.hand_no += 1
         self.went_to_showdown = False
+        self.last_aggressor = None
+        self.showdown_reveals = set()
         self.deck = Deck(seed=self._seed)
         self.board = []
         self.rabbit_board = []
@@ -344,6 +352,7 @@ class Game:
 
     def _begin_betting(self, preflop: bool) -> None:
         self._acted = set()
+        self.last_aggressor = None       # fresh street -> no aggressor yet
         if preflop:
             heads_up = len(self._in_hand_indices()) == 2
             if self._straddle_idx is not None:
@@ -419,6 +428,7 @@ class Game:
         p.bet(target - p.round_bet)
         verb = "bets" if to_call == 0 else "raises to"
         self._log(f"{p.name} {verb} {target}")
+        self.last_aggressor = p.id        # most-recent aggressor shows first
         if raise_size >= self.min_raise:
             self.min_raise = raise_size
             self._acted = {p.id}
@@ -495,6 +505,7 @@ class Game:
 
     def _showdown(self) -> None:
         self.went_to_showdown = True   # contested -> hands auto-reveal
+        self._compute_showdown_reveals()
         self.last_results = settle(self.players, self.board)
         for r in self.last_results["pots"]:
             names = ", ".join(self.get(w).name for w in r["winners"])
@@ -505,6 +516,40 @@ class Game:
         self.phase = Phase.SHOWDOWN
         self._set_to_act(None)
         self._post_hand_extras()
+
+    def _compute_showdown_reveals(self) -> None:
+        """Table-stakes show order: the last aggressor on the final street
+        shows first (or, if it was checked through, the first live player
+        left of the button). Going clockwise, each later player only has to
+        reveal if they can BEAT the best hand shown so far -- losers after
+        the winner get to muck (they keep the option to show on cooldown)."""
+        order = self._showdown_order()
+        reveals: set[str] = set()
+        best = None
+        for p in order:
+            score = best_hand(p.hole + self.board) if p.hole else None
+            if score is None:
+                continue
+            if best is None or score >= best:   # first shower, or an improve/tie
+                reveals.add(p.id)
+                if best is None or score > best:
+                    best = score
+        self.showdown_reveals = reveals
+
+    def _showdown_order(self) -> list[Player]:
+        live = [p for p in self.players if p.in_hand and p.hole]
+        if not live:
+            return []
+        agg = self.get(self.last_aggressor) if self.last_aggressor else None
+        start = self.players.index(agg) if agg and agg in live else \
+            self._next_in_hand(self.button)
+        n = len(self.players)
+        out = []
+        for off in range(n):
+            p = self.players[(start + off) % n]
+            if p.in_hand and p.hole:
+                out.append(p)
+        return out
 
     def set_run_vote(self, pid: str, times: int) -> None:
         runs.vote(self, pid, times)
