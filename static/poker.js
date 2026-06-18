@@ -254,6 +254,7 @@ function renderSeats() {
 
   const n = s.seat_count;
   const mySeat = s.you.seat;
+  const iAmSeated = mySeat != null;   // seated players don't need empty seats
   // On a tall portrait phone the felt is narrow, so pull the side seats in
   // (smaller horizontal radius) and spread them vertically.
   const portrait = window.matchMedia("(max-width: 700px) and (orientation: portrait)").matches;
@@ -265,7 +266,8 @@ function renderSeats() {
     const x = 50 + rx * Math.cos(angle);
     const y = 50 + ry * Math.sin(angle);
     const occupant = bySeat[seatNum];
-    felt.append(occupant ? seatEl(occupant, x, y) : openSeatEl(seatNum, x, y));
+    if (occupant) felt.append(seatEl(occupant, x, y));
+    else if (!iAmSeated) felt.append(openSeatEl(seatNum, x, y));
   }
 }
 
