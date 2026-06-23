@@ -87,6 +87,12 @@ async def ws_game(ws: WebSocket, table_id: str, pid: str = "", name: str = "Play
     try:
         while True:
             msg = await ws.receive_json()
+            # WebRTC voice signaling is a pure peer-to-peer relay -- no game
+            # state changes, so skip the full broadcast for it.
+            if msg.get("type") == "signal":
+                async with room.lock:
+                    await room.relay_signal(pid, msg)
+                continue
             async with room.lock:
                 await _handle(room, pid, msg)
                 await room.broadcast()
@@ -141,6 +147,13 @@ async def _handle(room, pid: str, msg: dict) -> None:
             g.show_cards(pid, which)
         elif t == "premove":
             g.set_premove(pid, msg.get("move"))
+        elif t == "voice_join":
+            if not hasattr(g, "voice_pids"):
+                g.voice_pids = set()
+            g.voice_pids.add(pid)
+        elif t == "voice_leave":
+            if getattr(g, "voice_pids", None):
+                g.voice_pids.discard(pid)
         elif t == "away":
             g.set_away(pid, bool(msg.get("value")))
         elif t == "auto_check_fold":

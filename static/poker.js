@@ -130,6 +130,7 @@ function connect() {
     const data = JSON.parse(ev.data);
     if (data.type === "state") { PP.state = data; onStateTimer(); onStateChat(); render(); }
     else if (data.type === "error") { toast(data.message); }
+    else if (data.type === "signal") { if (window.PPVoice) PPVoice.onSignal(data); }
   };
 }
 
@@ -189,6 +190,7 @@ function render() {
   if (window.renderRunVote) window.renderRunVote();
   renderResult();
   if (window.renderPanels) window.renderPanels(s);
+  if (window.PPVoice) PPVoice.onState();
 }
 
 function computeAnims(s) {
@@ -710,7 +712,7 @@ function wireCore() {
       }
       if (btn.disabled) return;
       const act = btn.dataset.act;
-      if (act === "raise") { openRaisePanel(); return; }   // two-step: open bet panel
+      if (act === "raise") { openRaisePanel(true); return; }   // open bet panel + select amount
       if (act === "call" && btn.dataset.betmin) {          // CALL acting as a min-bet
         btn.classList.add("pressed");
         send({ type: "action", action: "raise", amount: +btn.dataset.betmin });

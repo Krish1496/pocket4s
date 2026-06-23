@@ -70,6 +70,7 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
 def snapshot(g: Game, viewer_id: str) -> dict:
     viewer = g.get(viewer_id)
     is_owner = g.is_owner(viewer_id)
+    voice = getattr(g, "voice_pids", set())
     to_call = min_raise_to = 0
     if viewer and g.to_act == viewer_id:
         # Cap at your stack: you can never put in more than you have, so a
@@ -131,6 +132,8 @@ def snapshot(g: Game, viewer_id: str) -> dict:
         "seat_count": SEAT_COUNT,
         "open_seats": g.open_seats(),
         "owner": g.owner,
+        "voice": [{"id": pid, "name": g.members.get(pid, "Player")}
+                  for pid in sorted(voice)],
         "players": [_player_view(g, p, viewer_id) for p in g.players],
         "requests": requests,
         "ledger": g.ledger.rows(g.live_stacks()),

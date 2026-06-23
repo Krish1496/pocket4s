@@ -53,6 +53,23 @@ class Room:
                 # Keep them as a member/seat (reconnect-friendly) but mark
                 # their seat as disconnected so they auto-sit-out.
                 self.game.mark_disconnected(pid)
+                vp = getattr(self.game, "voice_pids", None)
+                if vp:
+                    vp.discard(pid)
+
+    async def relay_signal(self, pid: str, msg: dict) -> None:
+        """Forward a WebRTC signaling blob from one player to a specific peer.
+        Pure relay -- no game-state change, so no broadcast."""
+        target = msg.get("to")
+        if not target:
+            return
+        out = {"type": "signal", "from": pid,
+               "kind": msg.get("kind"), "data": msg.get("data")}
+        for ws in list(self.sockets.get(target, set())):
+            try:
+                await ws.send_json(out)
+            except Exception:
+                pass
 
     async def broadcast(self) -> None:
         dead: list[tuple[str, WebSocket]] = []
