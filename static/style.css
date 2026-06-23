@@ -54,20 +54,21 @@ body {
 }
 
 /* Felt table ------------------------------------------------------------
-   PokerNow uses a tall ROUNDED-RECTANGLE table with a thick dark rail and a
-   radial green felt (a touch lighter in the middle, darker toward the rail). */
+   DESKTOP / landscape: PokerNow PC look -- a wide green OVAL with a dark-green
+   rail and a soft lighter-green rim highlight. (Phones override this to a tall
+   rounded-rectangle further down -- see the portrait media query.) */
 .felt {
-  width: min(1080px, 94vw);
-  aspect-ratio: 1.45 / 1;
-  max-height: 70vh;
+  width: min(1100px, 95vw);
+  aspect-ratio: 1.72 / 1;
+  max-height: 72vh;
   margin: 0 auto;
-  background: radial-gradient(ellipse 115% 115% at 50% 45%, var(--felt) 62%, var(--felt-edge) 100%);
-  border: 16px solid var(--rail);
-  border-radius: 56px;
+  background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, #2a8a57 66%, var(--felt-edge) 100%);
+  border: 12px solid #123c22;
+  border-radius: 50%;                 /* full ellipse on desktop */
   box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
-    0 14px 34px rgba(0, 0, 0, 0.6);
+    inset 0 0 0 5px rgba(150, 214, 178, 0.22),   /* light-green rim highlight */
+    inset 0 0 70px rgba(0, 0, 0, 0.4),
+    0 16px 40px rgba(0, 0, 0, 0.6);
   position: relative;
 }
 
