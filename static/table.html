@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Puppy Poker - Table</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css?v=32" />
+  <link rel="stylesheet" href="/static/style.css?v=33" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -148,24 +148,37 @@
       <!-- Action bar -->
       <div id="actionBar" class="action-bar hidden">
         <div id="timerWrap" class="timer-wrap hidden"><div id="timerBar" class="timer-bar"></div></div>
-        <div id="raiseTools" class="raise-tools">
-          <div class="quick-row">
-            <button class="quick" data-quick="min">Min</button>
-            <button class="quick" data-quick="half">&frac12; Pot</button>
-            <button class="quick" data-quick="twothirds">&#8532; Pot</button>
-            <button class="quick" data-quick="pot">Pot</button>
-            <button class="quick" data-quick="allin">All-in</button>
-          </div>
-          <div class="raise-row">
-            <input id="raiseSlider" type="range" class="flex-1 accent-emerald-400" />
-            <input id="raiseAmount" type="number" class="raise-amount" />
-          </div>
-        </div>
-        <div class="main-row">
-          <button data-act="fold" class="act-btn act-fold">Fold (F)</button>
-          <button data-act="check" class="act-btn act-check">Check</button>
+        <!-- Main action row (CALL / RAISE / CHECK / FOLD -- PokerNow order). -->
+        <div class="main-row" id="mainRow">
           <button data-act="call" class="act-btn act-call">Call</button>
           <button data-act="raise" class="act-btn act-raise">Raise</button>
+          <button data-act="check" class="act-btn act-check">Check</button>
+          <button data-act="fold" class="act-btn act-fold">Fold</button>
+        </div>
+        <!-- Raise panel: hidden until RAISE is tapped (two-step, PokerNow style). -->
+        <div id="raisePanel" class="raise-panel hidden">
+          <div class="yourbet-row">
+            <span class="yourbet-label">Your bet</span>
+            <span class="yourbet-amt" id="yourBetAmt">0</span>
+            <span class="yourbet-bb" id="yourBetBB"></span>
+          </div>
+          <div class="quick-row">
+            <button class="quick" data-quick="min">Min Raise</button>
+            <button class="quick" data-quick="half">&frac12; Pot</button>
+            <button class="quick" data-quick="twothirds">&frac34; Pot</button>
+            <button class="quick" data-quick="pot">Pot</button>
+            <button class="quick" data-quick="allin">All in</button>
+          </div>
+          <div class="raise-row">
+            <button class="step" id="raiseMinus" aria-label="Decrease bet">&minus;</button>
+            <input id="raiseSlider" type="range" class="flex-1 accent-emerald-400" />
+            <button class="step" id="raisePlus" aria-label="Increase bet">+</button>
+            <input id="raiseAmount" type="number" class="raise-amount" />
+          </div>
+          <div class="confirm-row">
+            <button id="raiseBack" class="act-btn act-back">Back</button>
+            <button id="raiseConfirm" class="act-btn act-raise">Raise</button>
+          </div>
         </div>
       </div>
 
@@ -212,8 +225,8 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/sfx.js?v=30"></script>
-  <script src="/static/poker.js?v=30"></script>
-  <script src="/static/panels.js?v=30"></script>
+  <script src="/static/sfx.js?v=33"></script>
+  <script src="/static/poker.js?v=33"></script>
+  <script src="/static/panels.js?v=33"></script>
 </body>
 </html>

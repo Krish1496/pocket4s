@@ -245,8 +245,9 @@ function renderBoard() {
       if (s.board[i]) {
         if (i >= PP.anim.boardFrom) {
           const step = i - PP.anim.boardFrom;
-          board.append(flipCardEl(s.board[i], false, step * 0.12));
-          if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
+          // PokerNow: card lands face-down, holds ~0.12s, then a quick flip.
+          board.append(flipCardEl(s.board[i], false, 0.12 + step * 0.13));
+          if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), 120 + step * 130);
         } else {
           board.append(cardEl(s.board[i]));
         }
@@ -280,8 +281,8 @@ function renderStackedBoard(board, s) {
     if (col < base || PP.shownCells.has(key)) return cardEl(code);
     PP.shownCells.add(key);
     const step = newCells++;
-    if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), step * 120 + 40);
-    return flipCardEl(code, false, step * 0.12);
+    if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), 120 + step * 130);
+    return flipCardEl(code, false, 0.12 + step * 0.13);
   };
   for (let col = 0; col < 5; col++) {
     const colEl = document.createElement("div");
@@ -466,8 +467,6 @@ function renderActionBar() {
   const you = s.you;
   const isBetting = ["preflop", "flop", "turn", "river"].includes(s.phase);
   const myTurn = s.to_act === PP.pid && isBetting;
-  // Pre-move: I'm in the hand, it's NOT my turn yet -> show the SAME action
-  // buttons in a ghosted, armable state (PokerNow style).
   const premoveMode = !myTurn && isBetting && you.in_hand && !you.away &&
     s.to_act && s.to_act !== PP.pid;
   const bar = $("actionBar");
@@ -478,18 +477,19 @@ function renderActionBar() {
   const checkBtn = bar.querySelector('[data-act="check"]');
   const foldBtn = bar.querySelector('[data-act="fold"]');
   const raiseBtn = bar.querySelector('[data-act="raise"]');
-  [callBtn, checkBtn, foldBtn, raiseBtn].forEach((b) => b.classList.remove("armed"));
+  const all = [callBtn, checkBtn, foldBtn, raiseBtn];
+  all.forEach((b) => { b.classList.remove("armed"); b.disabled = false; });
+
+  // Whenever it's not our turn (or fresh render) the bet panel resets.
+  if (!myTurn) { $("raisePanel").classList.add("hidden"); $("mainRow").classList.remove("hidden"); }
 
   if (premoveMode) {
     PP.raiseBounds = null;
     const me = s.players.find((p) => p.id === PP.pid) || {};
     const callAmt = Math.min(me.stack || 0, Math.max(0, s.current_bet - (me.round_bet || 0)));
     const facing = callAmt > 0;
-    $("raiseTools").classList.add("hidden");
     raiseBtn.classList.add("hidden");                 // no pre-raise
-    foldBtn.classList.remove("hidden");
-    foldBtn.textContent = "Fold";
-    foldBtn.dataset.pm = "fold";
+    foldBtn.classList.remove("hidden"); foldBtn.textContent = "Fold"; foldBtn.dataset.pm = "fold";
     checkBtn.classList.remove("hidden");
     checkBtn.textContent = facing ? "Check/Fold" : "Check";
     checkBtn.dataset.pm = facing ? "checkfold" : "check";
@@ -506,28 +506,41 @@ function renderActionBar() {
 
   if (!myTurn) { PP.raiseBounds = null; return; }
 
-  foldBtn.textContent = "Fold (F)";
-  checkBtn.classList.toggle("hidden", !you.can_check);
-  callBtn.classList.toggle("hidden", you.can_check);
-  checkBtn.textContent = "Check (K)";
-  callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call} (C)` : "Call (C)";
-
+  // My turn: show ALL four buttons, greying out the inapplicable one.
+  all.forEach((b) => b.classList.remove("hidden"));
+  foldBtn.textContent = "Fold";
+  if (you.can_check) {
+    checkBtn.textContent = "Check"; checkBtn.disabled = false;
+    callBtn.textContent = "Call";  callBtn.disabled = true;
+  } else {
+    checkBtn.textContent = "Check"; checkBtn.disabled = true;
+    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call"; callBtn.disabled = false;
+  }
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
-  const maxRaiseTo = (s.current_bet - you.to_call) + you.stack; // round_bet + stack
+  const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
-  $("raiseTools").classList.toggle("hidden", !canRaise);
-  raiseBtn.classList.toggle("hidden", !canRaise);
+  raiseBtn.disabled = !canRaise;
+  raiseBtn.textContent = (you.to_call === 0) ? "Bet" : "Raise";
   if (canRaise) {
     const slider = $("raiseSlider"), amount = $("raiseAmount");
     slider.min = minTo; slider.max = maxRaiseTo;
     if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) {
-      slider.value = minTo; amount.value = minTo;
+      setRaiseValue(minTo);
     }
-    raiseBtn.textContent = (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
   }
   updateTimer();
 }
+
+// Update the "Your bet" readout (amount + big-blind multiple) in the panel.
+function updateBetDisplay() {
+  const v = parseInt($("raiseAmount").value, 10) || 0;
+  const bb = (PP.state && PP.state.settings.big_blind) || 1;
+  const amtEl = $("yourBetAmt"), bbEl = $("yourBetBB");
+  if (amtEl) amtEl.textContent = v;
+  if (bbEl) bbEl.textContent = bb ? `${(v / bb).toFixed(1).replace(/\.0$/, "")} BB` : "";
+}
+PP.updateBetDisplay = updateBetDisplay;
 
 function quickRaiseTo(kind) {
   const s = PP.state, you = s.you, b = PP.raiseBounds;
@@ -548,16 +561,29 @@ function setRaiseValue(v) {
   if (v == null) return;
   $("raiseSlider").value = v;
   $("raiseAmount").value = v;
+  if (PP.updateBetDisplay) PP.updateBetDisplay();
 }
 
-function focusRaise() {
+// Two-step raise: open the bet panel (presets + slider) in place of the main row.
+function openRaisePanel() {
   const b = PP.raiseBounds;
-  if (!b) return false;                      // can't raise right now
-  $("raiseTools").classList.remove("hidden");
+  if (!b) return false;
   const amt = $("raiseAmount");
-  amt.focus();
-  amt.select();
+  if (!amt.value || +amt.value < b.min || +amt.value > b.max) setRaiseValue(b.min);
+  else setRaiseValue(+amt.value);
+  $("mainRow").classList.add("hidden");
+  $("raisePanel").classList.remove("hidden");
   return true;
+}
+function closeRaisePanel() {
+  $("raisePanel").classList.add("hidden");
+  $("mainRow").classList.remove("hidden");
+}
+PP.openRaisePanel = openRaisePanel;
+PP.closeRaisePanel = closeRaisePanel;
+
+function focusRaise() {
+  return openRaisePanel();      // hotkey 'R' opens the bet panel
 }
 
 function doFold() {
@@ -576,6 +602,7 @@ function submitRaise() {
   setRaiseValue(v);
   $("raiseAmount").blur();
   send({ type: "action", action: "raise", amount: v });
+  closeRaisePanel();
 }
 
 const BUBBLE_MS = 5000;
@@ -664,7 +691,7 @@ function wireCore() {
     catch (e) { prompt("Copy this link:", location.href); }
   };
 
-  document.querySelectorAll(".act-btn").forEach((btn) => {
+  document.querySelectorAll("#mainRow .act-btn").forEach((btn) => {
     btn.onclick = () => {
       // Pre-move mode: arm/disarm a queued action instead of acting now.
       if ($("actionBar").classList.contains("premove")) {
@@ -674,14 +701,30 @@ function wireCore() {
         send({ type: "premove", move: (mv === cur) ? null : mv });
         return;
       }
+      if (btn.disabled) return;
       const act = btn.dataset.act;
-      if (act === "raise") { send({ type: "action", action: "raise", amount: +$("raiseAmount").value }); return; }
+      if (act === "raise") { openRaisePanel(); return; }   // two-step: open bet panel
       if (act === "fold") { doFold(); return; }
       send({ type: "action", action: act });
     };
   });
-  $("raiseSlider").oninput = () => { $("raiseAmount").value = $("raiseSlider").value; };
-  $("raiseAmount").oninput = () => { $("raiseSlider").value = $("raiseAmount").value; };
+
+  // Raise (bet) panel controls.
+  $("raiseConfirm").onclick = () => submitRaise();
+  $("raiseBack").onclick = () => closeRaisePanel();
+  const stepBy = (d) => {
+    const b = PP.raiseBounds; if (!b) return;
+    const bb = (PP.state && PP.state.settings.big_blind) || 1;
+    let v = (parseInt($("raiseAmount").value, 10) || b.min) + d * bb;
+    setRaiseValue(Math.max(b.min, Math.min(b.max, v)));
+  };
+  $("raiseMinus").onclick = () => stepBy(-1);
+  $("raisePlus").onclick = () => stepBy(1);
+  $("raiseSlider").oninput = () => setRaiseValue(+$("raiseSlider").value);
+  $("raiseAmount").oninput = () => {
+    $("raiseSlider").value = $("raiseAmount").value;
+    if (PP.updateBetDisplay) PP.updateBetDisplay();
+  };
   $("raiseAmount").addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); submitRaise(); }
   });
@@ -690,10 +733,7 @@ function wireCore() {
     btn.onclick = () => {
       const v = quickRaiseTo(btn.dataset.quick);
       if (v == null) return;
-      setRaiseValue(v);
-      if (btn.dataset.quick === "allin") {
-        send({ type: "action", action: "raise", amount: v });
-      }
+      setRaiseValue(v);          // set the amount; confirm with the RAISE button
     };
   });
 
