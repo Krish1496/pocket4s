@@ -333,8 +333,8 @@ function renderSeats() {
   // On a tall portrait phone the felt is narrow, so pull the side seats in
   // (smaller horizontal radius) and spread them vertically.
   const portrait = window.matchMedia("(max-width: 700px) and (orientation: portrait)").matches;
-  const rx = portrait ? 38 : 46;
-  const ry = portrait ? 46 : 44;
+  const rx = portrait ? 43 : 46;
+  const ry = portrait ? 45 : 44;
   for (let visual = 0; visual < n; visual++) {
     const seatNum = mySeat != null ? (mySeat + visual) % n : visual;
     const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
