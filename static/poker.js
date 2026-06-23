@@ -509,17 +509,22 @@ function renderActionBar() {
   // My turn: show ALL four buttons, greying out the inapplicable one.
   all.forEach((b) => b.classList.remove("hidden"));
   foldBtn.textContent = "Fold";
-  if (you.can_check) {
-    checkBtn.textContent = "Check"; checkBtn.disabled = false;
-    callBtn.textContent = "Call";  callBtn.disabled = true;
-  } else {
-    checkBtn.textContent = "Check"; checkBtn.disabled = true;
-    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call"; callBtn.disabled = false;
-  }
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
+  delete callBtn.dataset.betmin;
+  if (you.can_check) {
+    checkBtn.textContent = "Check"; checkBtn.disabled = false;
+    // Nothing to call -> CALL becomes a quick MIN-BET button (PokerNow style).
+    callBtn.textContent = canRaise ? `Bet ${minTo}` : "Bet";
+    callBtn.disabled = !canRaise;
+    if (canRaise) callBtn.dataset.betmin = String(minTo);
+  } else {
+    checkBtn.textContent = "Check"; checkBtn.disabled = true;
+    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call";
+    callBtn.disabled = false;
+  }
   raiseBtn.disabled = !canRaise;
   raiseBtn.textContent = (you.to_call === 0) ? "Bet" : "Raise";
   if (canRaise) {
@@ -565,14 +570,16 @@ function setRaiseValue(v) {
 }
 
 // Two-step raise: open the bet panel (presets + slider) in place of the main row.
-function openRaisePanel() {
+function openRaisePanel(focusInput) {
   const b = PP.raiseBounds;
   if (!b) return false;
-  const amt = $("raiseAmount");
-  if (!amt.value || +amt.value < b.min || +amt.value > b.max) setRaiseValue(b.min);
-  else setRaiseValue(+amt.value);
+  setRaiseValue(b.min);                 // always start at the MINIMUM raise
   $("mainRow").classList.add("hidden");
   $("raisePanel").classList.remove("hidden");
+  if (focusInput) {
+    const amt = $("raiseAmount");
+    amt.focus(); amt.select();          // R -> amount pre-selected for direct typing
+  }
   return true;
 }
 function closeRaisePanel() {
@@ -583,7 +590,7 @@ PP.openRaisePanel = openRaisePanel;
 PP.closeRaisePanel = closeRaisePanel;
 
 function focusRaise() {
-  return openRaisePanel();      // hotkey 'R' opens the bet panel
+  return openRaisePanel(true);      // hotkey 'R': open the bet panel + select the amount
 }
 
 function doFold() {
@@ -704,6 +711,11 @@ function wireCore() {
       if (btn.disabled) return;
       const act = btn.dataset.act;
       if (act === "raise") { openRaisePanel(); return; }   // two-step: open bet panel
+      if (act === "call" && btn.dataset.betmin) {          // CALL acting as a min-bet
+        btn.classList.add("pressed");
+        send({ type: "action", action: "raise", amount: +btn.dataset.betmin });
+        return;
+      }
       btn.classList.add("pressed");                          // flood solid until next state
       if (act === "fold") { doFold(); return; }
       send({ type: "action", action: act });
