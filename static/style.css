@@ -1,13 +1,19 @@
 :root {
-  --felt: #157f3b;
-  --felt-edge: #0f5132;
+  /* PokerNow palette (sampled from the reference recording). */
+  --felt: #2f9760;
+  --felt-edge: #1d6b3f;
+  --rail: #1f1d1e;
+  --pod: #313131;
+  --pod-active: #fdfdfd;
+  --chip: #d6e84f;
+  --dealer: #5c959e;
   --card-w: 66px;
 }
 
-/* A lighter overall room: soft slate gradient behind the table. */
+/* PokerNow: a near-black room behind the felt. */
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, #64748b 0%, #475569 55%, #334155 100%)
+    radial-gradient(1200px 900px at 50% 0%, #2b2829 0%, #1e1b1c 58%, #151314 100%)
     fixed;
 }
 
@@ -16,28 +22,29 @@ body {
    are all derived from it, so a card scales as one piece on every screen. */
 .card {
   width: var(--card-w);
-  height: calc(var(--card-w) * 1.42);
-  border-radius: 6px;
+  height: calc(var(--card-w) * 1.40);
+  border-radius: 8px;
   background: #fdfdfd;
   color: #111;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  font-weight: 900;
+  line-height: 0.95;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
   position: relative;
   user-select: none;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
-.card .rank { font-size: calc(var(--card-w) * 0.40); }
-.card .suit { font-size: calc(var(--card-w) * 0.34); }
-.card.red { color: #c81e1e; }
+.card .rank { font-size: calc(var(--card-w) * 0.50); }
+.card .suit { font-size: calc(var(--card-w) * 0.46); }
+.card.red { color: #e0282d; }
 .card.black { color: #111; }
 .card.back {
-  background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #2547a3 6px, #2547a3 12px);
-  border: 2px solid #cbd5e1;
+  background:
+    repeating-linear-gradient(45deg, #c0322f, #c0322f 7px, #d9514e 7px, #d9514e 14px);
+  border: 2px solid #f2dada;
 }
 .card.small { --card-w: 46px; }   /* height + fonts follow automatically */
 .card.placeholder {
@@ -46,17 +53,21 @@ body {
   box-shadow: none;
 }
 
-/* Felt table ------------------------------------------------------------- */
+/* Felt table ------------------------------------------------------------
+   PokerNow uses a tall ROUNDED-RECTANGLE table with a thick dark rail and a
+   radial green felt (a touch lighter in the middle, darker toward the rail). */
 .felt {
-  /* Default (desktop / landscape): a wide oval that fills the column. */
   width: min(1080px, 94vw);
-  aspect-ratio: 1.6 / 1;
+  aspect-ratio: 1.45 / 1;
   max-height: 70vh;
   margin: 0 auto;
-  background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-edge) 100%);
-  border: 14px solid #3b2417;
-  border-radius: 48% / 60%;
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55), 0 12px 30px rgba(0, 0, 0, 0.5);
+  background: radial-gradient(ellipse 70% 70% at center, var(--felt) 0%, var(--felt-edge) 100%);
+  border: 16px solid var(--rail);
+  border-radius: 56px;
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
+    0 14px 34px rgba(0, 0, 0, 0.6);
   position: relative;
 }
 
@@ -68,46 +79,63 @@ body {
   text-align: center;
 }
 .seat .pod {
-  background: rgba(15, 23, 42, 0.92);
-  border: 2px solid #334155;
+  background: var(--pod);
+  border: none;
   border-radius: 12px;
-  padding: 6px 8px;
+  padding: 7px 10px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 }
-.seat.you .pod { border-color: #34d399; }
+.seat.you .pod { background: var(--pod); }
 .seat.turn .pod {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
+  background: var(--pod-active);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
 }
+.seat.turn .name { color: #1a1a1a; }
+.seat.turn .stack { color: #1a1a1a; }
 .seat.folded { opacity: 0.45; }
-.seat .name { font-size: 15px; font-weight: 700; }
-.seat .stack { font-size: 14px; color: #fcd34d; }
+.seat .name { font-size: 15px; font-weight: 800; color: #f4f4f4; line-height: 1.15; }
+.seat .stack { font-size: 14px; color: #e8e8e8; font-weight: 600; }
+/* Purple-to-lime timer bar along the bottom of the active (white) pod. */
+.pod-timer {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.pod-timer-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, #8b5cf6 0%, #6366f1 35%, #a3e635 100%);
+  transition: width 0.25s linear;
+}
 .seat .badge {
   position: absolute;
   top: -10px;
   right: -8px;
-  background: #fbbf24;
-  color: #1e293b;
-  font-size: 11px;
+  background: var(--dealer);
+  color: #ffffff;
+  font-size: 12px;
   font-weight: 900;
   border-radius: 999px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 .seat .bet-chip {
   margin-top: 4px;
   display: inline-block;
-  background: #0f172a;
-  color: #fde047;
-  border: 2px solid #f59e0b;
+  background: var(--chip);
+  color: #1a1a1a;
+  border: none;
   border-radius: 999px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
-  letter-spacing: 0.3px;
-  padding: 3px 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.2px;
+  padding: 3px 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 .seat .cards { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; min-height: 64px; }
 
@@ -346,21 +374,34 @@ body {
   text-align: center;
 }
 
-/* Action bar + raise tools + timer -------------------------------------- */
+/* Action bar + raise tools + timer --------------------------------------
+   PokerNow: outlined buttons (colored text + thin border) on the dark room. */
 .action-bar {
   margin: 1rem auto 0;
   max-width: 640px;
   position: sticky;
   bottom: 12px;
-  background: #1e293b;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  outline: 1px solid #334155;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  background: transparent;
+  border-radius: 0;
+  padding: 0.5rem 0.25rem;
+  outline: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
 }
+.act-btn {
+  background: rgba(20, 22, 21, 0.7);
+  border: 1.5px solid #3a3a3a;
+  color: #e6e6e6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.act-btn.act-call { color: #4ade80; border-color: rgba(74, 222, 128, 0.55); }
+.act-btn.act-raise { color: #4ade80; border-color: rgba(74, 222, 128, 0.55); }
+.act-btn.act-check { color: #cfcfcf; border-color: #4a4a4a; }
+.act-btn.act-fold { color: #f87171; border-color: rgba(248, 113, 113, 0.7); }
+.act-btn:hover { filter: brightness(1.25); }
 .timer-wrap {
   height: 6px; background: #0f172a; border-radius: 999px; overflow: hidden;
 }
@@ -387,17 +428,22 @@ body {
 .main-row .act-btn { flex: 1; font-size: 1.1rem; padding: 0.7rem 0.5rem; }
 .raise-amount { font-size: 1.05rem; }
 
-/* Pot readout -- nice and chunky so it's readable across the table. */
+/* Pot readout -- PokerNow's dark rounded pill with a white number. */
 .pot-label {
-  font-size: 1.7rem;
+  display: inline-block;
+  background: rgba(20, 22, 21, 0.78);
+  font-size: 1.5rem;
   font-weight: 900;
-  color: #fcd34d;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.3px;
+  border-radius: 999px;
+  padding: 4px 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* Bet chips on each seat -- still big & legible on mobile. */
-.seat .bet-chip { font-size: 15px; font-weight: 900; padding: 2px 9px; }
+/* Bet chips on each seat -- big lime badge, legible on mobile. */
+.seat .bet-chip { font-size: 15px; font-weight: 900; padding: 3px 12px; }
 
 /* Transient chat bubble above a player's seat. */
 .chat-bubble {
@@ -459,9 +505,10 @@ body {
 .flip-front { transform: rotateY(0deg); }
 .flip-front.card { width: 100%; height: 100%; }
 .flip-back {
-  transform: rotateY(180deg); border-radius: 6px;
-  background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #2547a3 6px, #2547a3 12px);
-  border: 2px solid #cbd5e1;
+  transform: rotateY(180deg); border-radius: 8px;
+  background:
+    repeating-linear-gradient(45deg, #c0322f, #c0322f 7px, #d9514e 7px, #d9514e 14px);
+  border: 2px solid #f2dada;
 }
 
 /* Rabbit-hunt: the board is clickable after a folded-out hand. */
@@ -542,19 +589,26 @@ body {
   .main-row .act-btn { padding: 0.75rem 0.4rem; font-size: 0.95rem; }
   .quick { padding: 0.55rem 0.2rem; }
   .pot-label { font-size: 1.4rem; }
+  /* PokerNow's top bar is minimal: shrink the header controls on phones. */
+  header { padding: 0.45rem 0.5rem; }
+  header .btn-muted, header .btn-primary { padding: 0.28rem 0.5rem; font-size: 0.7rem; }
+  header h1 { font-size: 1rem; }
+  header #connDot { display: none; }          /* PokerNow shows no status text here */
+  header > div:last-child { flex-wrap: nowrap; gap: 0.3rem; }
 }
 
 /* Portrait phones: turn the felt into a TALL oval that fills the screen,
    instead of a short letterbox stranded in the middle. Driven by width so
    the 5-card board always fits; height follows to eat the vertical space. */
 @media (max-width: 700px) and (orientation: portrait) {
-  main { padding-bottom: 0.3rem; }
+  main { padding-bottom: 0.4rem; }
   .felt {
-    width: 96vw;
-    height: min(74dvh, 150vw);   /* tall oval; dvh dodges the URL bar */
+    width: 94vw;
+    height: min(60dvh, 128vw);    /* leaves room for the sticky action bar */
     aspect-ratio: auto;
     max-height: none;
-    border-radius: 44% / 50%;
+    border-radius: 56px;          /* PokerNow: rounded RECTANGLE, not an oval */
+    border-width: 13px;
   }
   /* Tuck the board cards a touch tighter so 5 fit across the narrow felt. */
   #board { gap: 0.25rem; }

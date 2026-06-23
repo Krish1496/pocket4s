@@ -10,3 +10,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Dev screenshot / video frames
+.video-frames/

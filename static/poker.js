@@ -165,7 +165,7 @@ function render() {
   const s = PP.state;
   if (!s) return;
   computeAnims(s);
-  $("potLabel").textContent = `Pot: ${s.pot}`;
+  $("potLabel").textContent = s.pot;
   if (PP.anim.potBump) {
     const pl = $("potLabel");
     pl.classList.remove("bump"); void pl.offsetWidth; pl.classList.add("bump");
@@ -379,7 +379,7 @@ function seatEl(p, xPct, yPct) {
   const awayTag = p.away ? ' <span class="away-tag">AWAY</span>' : "";
   pod.innerHTML =
     `<div class="name">${escapeHtml(p.name)}${crown}${disc}${awayTag}</div>` +
-    `<div class="stack">${p.stack} chips${topup}</div>`;
+    `<div class="stack">${p.stack}${topup}</div>`;
   if (p.is_button) {
     const b = document.createElement("div");
     b.className = "badge";
@@ -387,10 +387,14 @@ function seatEl(p, xPct, yPct) {
     pod.append(b);
   }
   if (p.is_turn && s.action_timeout > 0 && s.turn_seconds_left != null) {
-    const t = document.createElement("div");
-    t.className = "seat-timer";
-    t.textContent = Math.ceil(s.turn_seconds_left);
-    pod.append(t);
+    const bar = document.createElement("div");
+    bar.className = "pod-timer";
+    const fill = document.createElement("div");
+    fill.className = "pod-timer-fill";
+    const pct = Math.max(0, Math.min(100, (s.turn_seconds_left / s.action_timeout) * 100));
+    fill.style.width = pct + "%";
+    bar.append(fill);
+    pod.append(bar);
   }
   if (s.you.is_owner) {
     pod.classList.add("host-editable");
@@ -589,8 +593,8 @@ function updateTimer() {
   wrap.classList.toggle("hidden", !myTurn);
   barEl.style.width = pct + "%";
   barEl.style.background = left < 5 ? "#ef4444" : left < 10 ? "#f59e0b" : "#34d399";
-  const seatTimer = document.querySelector(".seat.turn .seat-timer");
-  if (seatTimer) seatTimer.textContent = Math.ceil(left);
+  const podFill = document.querySelector(".seat.turn .pod-timer-fill");
+  if (podFill) podFill.style.width = pct + "%";
 }
 
 function renderResult() {
