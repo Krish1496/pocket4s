@@ -478,7 +478,7 @@ function renderActionBar() {
   const foldBtn = bar.querySelector('[data-act="fold"]');
   const raiseBtn = bar.querySelector('[data-act="raise"]');
   const all = [callBtn, checkBtn, foldBtn, raiseBtn];
-  all.forEach((b) => { b.classList.remove("armed"); b.disabled = false; });
+  all.forEach((b) => { b.classList.remove("armed", "pressed"); b.disabled = false; });
 
   // Whenever it's not our turn (or fresh render) the bet panel resets.
   if (!myTurn) { $("raisePanel").classList.add("hidden"); $("mainRow").classList.remove("hidden"); }
@@ -704,6 +704,7 @@ function wireCore() {
       if (btn.disabled) return;
       const act = btn.dataset.act;
       if (act === "raise") { openRaisePanel(); return; }   // two-step: open bet panel
+      btn.classList.add("pressed");                          // flood solid until next state
       if (act === "fold") { doFold(); return; }
       send({ type: "action", action: act });
     };

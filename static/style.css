@@ -426,10 +426,19 @@ body {
 .act-btn.act-check { color: #cfcfcf; border-color: #4a4a4a; }
 .act-btn.act-fold { color: #f87171; border-color: rgba(248, 113, 113, 0.7); }
 .act-btn:hover { filter: brightness(1.25); }
-/* On YOUR turn the affirmative buttons are solid-filled (PokerNow). */
-.action-bar:not(.premove) .act-call,
-.action-bar:not(.premove) .act-raise {
+/* PokerNow: Call/Raise stay OUTLINED (green text + green border) while it's
+   your turn -- they only flood SOLID green at the moment you press them
+   (i.e. when you actually call/raise). The .pressed class makes that fill
+   stick from tap until the next state (more reliable than :active on touch). */
+.act-btn.act-call:active, .act-btn.act-raise:active,
+.act-btn.act-call.pressed, .act-btn.act-raise.pressed {
   background: #22c55e; color: #08230f; border-color: #22c55e;
+}
+.act-btn.act-check:active, .act-btn.act-check.pressed {
+  background: #6b7280; color: #fff; border-color: #6b7280;
+}
+.act-btn.act-fold:active, .act-btn.act-fold.pressed {
+  background: #ef4444; color: #fff; border-color: #ef4444;
 }
 /* Pre-move mode: ghost the buttons; the armed one lights up. */
 .action-bar.premove .act-btn { opacity: 0.8; }
