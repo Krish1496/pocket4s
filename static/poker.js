@@ -508,25 +508,25 @@ function renderActionBar() {
 
   // My turn: show ALL four buttons, greying out the inapplicable one.
   all.forEach((b) => b.classList.remove("hidden"));
-  foldBtn.textContent = "Fold";
+  foldBtn.textContent = "Fold (F)";
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
   delete callBtn.dataset.betmin;
   if (you.can_check) {
-    checkBtn.textContent = "Check"; checkBtn.disabled = false;
+    checkBtn.textContent = "Check (K)"; checkBtn.disabled = false;
     // Nothing to call -> CALL becomes a quick MIN-BET button (PokerNow style).
-    callBtn.textContent = canRaise ? `Bet ${minTo}` : "Bet";
+    callBtn.textContent = canRaise ? `Bet ${minTo} (C)` : "Bet";
     callBtn.disabled = !canRaise;
     if (canRaise) callBtn.dataset.betmin = String(minTo);
   } else {
-    checkBtn.textContent = "Check"; checkBtn.disabled = true;
-    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call}` : "Call";
+    checkBtn.textContent = "Check (K)"; checkBtn.disabled = true;
+    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call} (C)` : "Call (C)";
     callBtn.disabled = false;
   }
   raiseBtn.disabled = !canRaise;
-  raiseBtn.textContent = (you.to_call === 0) ? "Bet" : "Raise";
+  raiseBtn.textContent = (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
   if (canRaise) {
     const slider = $("raiseSlider"), amount = $("raiseAmount");
     slider.min = minTo; slider.max = maxRaiseTo;
