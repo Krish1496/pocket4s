@@ -85,6 +85,7 @@ body {
   padding: 7px 10px;
   text-align: left;
   position: relative;
+  z-index: 2;            /* paints OVER the tilted card bottoms */
   overflow: hidden;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 }
@@ -137,7 +138,30 @@ body {
   padding: 3px 13px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
-.seat .cards { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; min-height: 64px; }
+/* PokerNow hole cards: two cards FANNED (tilted opposite ways) with the
+   bottom half tucked behind the player name pod. DOM order is cards -> pod,
+   so we layer with z-index and pull the pod up over the cards. */
+.seat .cards {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  margin-bottom: 0;
+  min-height: 64px;
+  position: relative;
+  z-index: 1;            /* sits BEHIND the name pod */
+}
+.seat .cards > * {
+  transform-origin: bottom center;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+.seat .cards > *:first-child { transform: rotate(-9deg); margin-right: -12px; z-index: 1; }
+.seat .cards > *:last-child  { transform: rotate(9deg);  z-index: 2; }
+.seat .cards > *:only-child  { transform: none; margin-right: 0; }
+
+/* Tuck the cards' lower half behind the name pod (only when cards exist). */
+.seat .cards:not(:empty) + .pod {
+  margin-top: -28px;
+}
 
 .disconnected-dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 999px;
@@ -589,7 +613,9 @@ body {
   .seat .pod { padding: 4px 5px; border-radius: 10px; }
   .seat .name { font-size: clamp(11px, 3.4vw, 15px); }
   .seat .stack { font-size: clamp(10px, 3.1vw, 14px); }
-  .seat .cards { gap: 2px; margin-bottom: 3px; min-height: calc(clamp(34px, 10.5vw, 50px) * 1.42); }
+  .seat .cards { gap: 0; margin-bottom: 0; min-height: calc(clamp(34px, 10.5vw, 50px) * 1.42); }
+  .seat .cards > *:first-child { margin-right: -10px; }
+  .seat .cards:not(:empty) + .pod { margin-top: calc(clamp(34px, 10.5vw, 50px) * 1.42 * -0.42); }
   .seat .badge { width: 20px; height: 20px; font-size: 10px; }
   .seat-timer { width: 20px; height: 20px; font-size: 10px; }
   main { padding-left: 0.4rem; padding-right: 0.4rem; padding-top: 0.4rem; }
