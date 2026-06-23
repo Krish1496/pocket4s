@@ -402,6 +402,20 @@ body {
 .act-btn.act-check { color: #cfcfcf; border-color: #4a4a4a; }
 .act-btn.act-fold { color: #f87171; border-color: rgba(248, 113, 113, 0.7); }
 .act-btn:hover { filter: brightness(1.25); }
+/* On YOUR turn the affirmative buttons are solid-filled (PokerNow). */
+.action-bar:not(.premove) .act-call,
+.action-bar:not(.premove) .act-raise {
+  background: #22c55e; color: #08230f; border-color: #22c55e;
+}
+/* Pre-move mode: ghost the buttons; the armed one lights up. */
+.action-bar.premove .act-btn { opacity: 0.8; }
+.action-bar.premove .act-btn.armed {
+  opacity: 1;
+  box-shadow: 0 0 0 2px currentColor inset, 0 0 10px rgba(0, 0, 0, 0.4);
+}
+.action-bar.premove .act-call.armed { background: #22c55e; color: #08230f; border-color: #22c55e; }
+.action-bar.premove .act-check.armed { background: #f59e0b; color: #1a1a1a; border-color: #f59e0b; }
+.action-bar.premove .act-fold.armed { background: #ef4444; color: #fff; border-color: #ef4444; }
 .timer-wrap {
   height: 6px; background: #0f172a; border-radius: 999px; overflow: hidden;
 }

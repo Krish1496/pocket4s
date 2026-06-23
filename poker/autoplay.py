@@ -17,7 +17,7 @@ def set_auto_check_fold(game, pid: str, value: bool) -> None:
 
 
 def set_premove(game, pid: str, move: str | None) -> None:
-    if move not in (None, "check", "call", "checkfold"):
+    if move not in (None, "check", "call", "checkfold", "fold"):
         raise ValueError("Unknown pre-move")
     p = _seated(game, pid)
     p.premove = move
@@ -67,6 +67,8 @@ def _auto_move_for(game, p) -> str | None:
     if not pm:
         return None
     p.premove = None                          # one-shot
+    if pm == "fold":
+        return "fold"                         # pre-fold: give it up when it's on you
     if pm == "check":
         return "check" if to_call <= 0 else None   # cancelled: a bet came in
     if pm == "call":

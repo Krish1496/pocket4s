@@ -70,15 +70,12 @@
     if (todo.length) PP.send({ type: "show_cards", which: todo });
   };
 
-  // ---- pre-move bar (queue an action while waiting) -------------------
+  // ---- pre-move bar (LEGACY) ------------------------------------------
+  // Pre-moves are now armed via the main action buttons in their ghosted
+  // state (see renderActionBar). Keep the old bar permanently hidden.
   function renderPremove(s) {
     const bar = $("premoveBar");
-    const betting = ["preflop", "flop", "turn", "river"].includes(s.phase);
-    const canPremove = s.you.in_hand && betting && s.to_act && s.to_act !== s.you.id;
-    show(bar, canPremove);
-    if (!canPremove) return;
-    bar.querySelectorAll(".pm").forEach((b) =>
-      b.classList.toggle("active", (b.dataset.pm || null) === s.you.premove));
+    if (bar) bar.classList.add("hidden");
   }
 
   // ---- buy-in requests (host) -----------------------------------------

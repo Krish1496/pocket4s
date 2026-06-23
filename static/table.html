@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Puppy Poker - Table</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css?v=29" />
+  <link rel="stylesheet" href="/static/style.css?v=30" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -169,15 +169,6 @@
         </div>
       </div>
 
-      <!-- Pre-move bar: queue an action for when it's your turn -->
-      <div id="premoveBar" class="premove-bar hidden">
-        <span class="text-xs text-slate-400 mr-1">Pre-move:</span>
-        <button class="pm" data-pm="check">Check <kbd>K</kbd></button>
-        <button class="pm" data-pm="call" title="Calls the current bet -- cancels if someone raises more">Call <kbd>C</kbd></button>
-        <button class="pm" data-pm="checkfold">Check/Fold <kbd>X</kbd></button>
-        <button class="pm pm-clear" data-pm="">Clear</button>
-      </div>
-
       <!-- Host / self controls -->
       <div id="controlBar" class="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button id="startBtn" class="btn-primary hidden">Start hand</button>
@@ -221,8 +212,8 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <script src="/static/sfx.js?v=29"></script>
-  <script src="/static/poker.js?v=29"></script>
-  <script src="/static/panels.js?v=29"></script>
+  <script src="/static/sfx.js?v=30"></script>
+  <script src="/static/poker.js?v=30"></script>
+  <script src="/static/panels.js?v=30"></script>
 </body>
 </html>

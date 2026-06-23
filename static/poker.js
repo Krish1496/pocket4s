@@ -466,12 +466,47 @@ function renderActionBar() {
   const you = s.you;
   const isBetting = ["preflop", "flop", "turn", "river"].includes(s.phase);
   const myTurn = s.to_act === PP.pid && isBetting;
+  // Pre-move: I'm in the hand, it's NOT my turn yet -> show the SAME action
+  // buttons in a ghosted, armable state (PokerNow style).
+  const premoveMode = !myTurn && isBetting && you.in_hand && !you.away &&
+    s.to_act && s.to_act !== PP.pid;
   const bar = $("actionBar");
-  bar.classList.toggle("hidden", !myTurn);
-  if (!myTurn) { PP.raiseBounds = null; return; }
+  bar.classList.toggle("hidden", !(myTurn || premoveMode));
+  bar.classList.toggle("premove", premoveMode);
 
   const callBtn = bar.querySelector('[data-act="call"]');
   const checkBtn = bar.querySelector('[data-act="check"]');
+  const foldBtn = bar.querySelector('[data-act="fold"]');
+  const raiseBtn = bar.querySelector('[data-act="raise"]');
+  [callBtn, checkBtn, foldBtn, raiseBtn].forEach((b) => b.classList.remove("armed"));
+
+  if (premoveMode) {
+    PP.raiseBounds = null;
+    const me = s.players.find((p) => p.id === PP.pid) || {};
+    const callAmt = Math.min(me.stack || 0, Math.max(0, s.current_bet - (me.round_bet || 0)));
+    const facing = callAmt > 0;
+    $("raiseTools").classList.add("hidden");
+    raiseBtn.classList.add("hidden");                 // no pre-raise
+    foldBtn.classList.remove("hidden");
+    foldBtn.textContent = "Fold";
+    foldBtn.dataset.pm = "fold";
+    checkBtn.classList.remove("hidden");
+    checkBtn.textContent = facing ? "Check/Fold" : "Check";
+    checkBtn.dataset.pm = facing ? "checkfold" : "check";
+    callBtn.classList.toggle("hidden", !facing);
+    callBtn.textContent = facing ? `Call ${callAmt}` : "Call";
+    callBtn.dataset.pm = "call";
+    const pm = you.premove;
+    foldBtn.classList.toggle("armed", pm === "fold");
+    checkBtn.classList.toggle("armed", pm === "check" || pm === "checkfold");
+    callBtn.classList.toggle("armed", pm === "call");
+    updateTimer();
+    return;
+  }
+
+  if (!myTurn) { PP.raiseBounds = null; return; }
+
+  foldBtn.textContent = "Fold (F)";
   checkBtn.classList.toggle("hidden", !you.can_check);
   callBtn.classList.toggle("hidden", you.can_check);
   checkBtn.textContent = "Check (K)";
@@ -482,15 +517,14 @@ function renderActionBar() {
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
   $("raiseTools").classList.toggle("hidden", !canRaise);
-  bar.querySelector('[data-act="raise"]').classList.toggle("hidden", !canRaise);
+  raiseBtn.classList.toggle("hidden", !canRaise);
   if (canRaise) {
     const slider = $("raiseSlider"), amount = $("raiseAmount");
     slider.min = minTo; slider.max = maxRaiseTo;
     if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) {
       slider.value = minTo; amount.value = minTo;
     }
-    bar.querySelector('[data-act="raise"]').textContent =
-      (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
+    raiseBtn.textContent = (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
   }
   updateTimer();
 }
@@ -632,6 +666,14 @@ function wireCore() {
 
   document.querySelectorAll(".act-btn").forEach((btn) => {
     btn.onclick = () => {
+      // Pre-move mode: arm/disarm a queued action instead of acting now.
+      if ($("actionBar").classList.contains("premove")) {
+        const mv = btn.dataset.pm || null;
+        if (!mv) return;
+        const cur = PP.state.you.premove;
+        send({ type: "premove", move: (mv === cur) ? null : mv });
+        return;
+      }
       const act = btn.dataset.act;
       if (act === "raise") { send({ type: "action", action: "raise", amount: +$("raiseAmount").value }); return; }
       if (act === "fold") { doFold(); return; }
@@ -664,6 +706,15 @@ function wireCore() {
 
   wireHotkeys();
   $("board").addEventListener("click", tryRabbit);
+
+  // Smooth timer + bubble loop: updateTimer() must run every frame so the
+  // action-bar bar AND the active pod's timer bar deplete smoothly between
+  // server snapshots (not just when a new state message arrives).
+  function tick() {
+    if (PP.state) { updateTimer(); pruneBubbles(); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 // Reposition seats when the phone rotates / the window resizes.
