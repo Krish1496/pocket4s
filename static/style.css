@@ -1,19 +1,21 @@
 :root {
-  /* PokerNow palette (sampled from the reference recording). */
-  --felt: #2f9760;
-  --felt-edge: #1d6b3f;
-  --rail: #1f1d1e;
+  /* PokerNow BLUE theme (sampled from the reference screenshots). */
+  --felt: #2c40d8;
+  --felt-mid: #2335b8;
+  --felt-edge: #1a2790;
+  --rail: #141419;
   --pod: #313131;
   --pod-active: #fdfdfd;
   --chip: #d6e84f;
-  --dealer: #5c959e;
+  --dealer: #ffffff;
+  --pot-pill: #2336c0;
   --card-w: 66px;
 }
 
 /* PokerNow: a near-black room behind the felt. */
 body {
   background:
-    radial-gradient(1200px 900px at 50% 0%, #2b2829 0%, #1e1b1c 58%, #151314 100%)
+    radial-gradient(1200px 900px at 50% 0%, #232227 0%, #161518 58%, #0e0d10 100%)
     fixed;
 }
 
@@ -70,13 +72,13 @@ body {
   aspect-ratio: 1.72 / 1;
   max-height: 72vh;
   margin: 0 auto;
-  background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, #2a8a57 66%, var(--felt-edge) 100%);
-  border: 12px solid #123c22;
+  background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, var(--felt-mid) 64%, var(--felt-edge) 100%);
+  border: 12px solid #0c0c12;
   border-radius: 50%;                 /* full ellipse on desktop */
   box-shadow:
-    inset 0 0 0 5px rgba(150, 214, 178, 0.22),   /* light-green rim highlight */
-    inset 0 0 70px rgba(0, 0, 0, 0.4),
-    0 16px 40px rgba(0, 0, 0, 0.6);
+    inset 0 0 0 5px rgba(150, 178, 255, 0.22),   /* light-blue rim highlight */
+    inset 0 0 70px rgba(0, 0, 0, 0.45),
+    0 16px 40px rgba(0, 0, 0, 0.65);
   position: relative;
 }
 
@@ -511,15 +513,15 @@ body {
 /* Pot readout -- PokerNow's dark rounded pill with a white number. */
 .pot-label {
   display: inline-block;
-  background: rgba(20, 22, 21, 0.78);
+  background: var(--pot-pill);
   font-size: 1.5rem;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   letter-spacing: 0.3px;
   border-radius: 999px;
-  padding: 4px 22px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  padding: 4px 26px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Bet chips on each seat -- big lime badge, legible on mobile. */
@@ -749,3 +751,35 @@ body {
   animation: mic-pulse 0.8s ease-in-out infinite;
 }
 @keyframes mic-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+/* Empty "SIT" seats (PokerNow blue theme) ------------------------------- */
+.seat.open .sit-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  padding: 14px 8px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.seat.open .sit-box:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.4); }
+.seat.open .sit-num { font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.35); }
+.seat.open .sit-text { font-size: 16px; font-weight: 700; letter-spacing: 4px; }
+
+/* Neutral center watermark on the felt (our own mark, faint). */
+.felt-mark {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: rgba(255, 255, 255, 0.10); pointer-events: none; z-index: 0;
+  text-align: center; user-select: none;
+}
+.felt-mark .mark-ring {
+  width: 64px; height: 64px; border-radius: 999px;
+  border: 6px dashed rgba(255, 255, 255, 0.12);
+}
+.felt-mark .mark-text {
+  font-weight: 900; letter-spacing: 6px; font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.10);
+}

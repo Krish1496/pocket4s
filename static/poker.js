@@ -352,7 +352,7 @@ function renderSeats() {
     }
     const occupant = bySeat[seatNum];
     if (occupant) felt.append(seatEl(occupant, x, y));
-    else if (!iAmSeated) felt.append(openSeatEl(seatNum, x, y));
+    else felt.append(openSeatEl(seatNum, x, y));   // PokerNow shows empty SIT seats
   }
 }
 
@@ -496,13 +496,13 @@ function openSeatEl(seatNum, xPct, yPct) {
   wrap.className = "seat open";
   wrap.style.left = xPct + "%";
   wrap.style.top = yPct + "%";
-  const pod = document.createElement("div");
-  pod.className = "pod";
   const canSit = !s.you.seated;
-  pod.innerHTML = `<div class="name text-slate-400">Seat ${seatNum + 1}</div>` +
-    `<div class="stack text-slate-500">${canSit ? "Sit here" : "open"}</div>`;
-  if (canSit) pod.dataset.sitSeat = seatNum;
-  wrap.append(pod);
+  const box = document.createElement("div");
+  box.className = "sit-box";
+  box.innerHTML = `<span class="sit-num">${seatNum + 1}</span>` +
+    `<span class="sit-text">SIT</span>`;
+  if (canSit) box.dataset.sitSeat = seatNum;
+  wrap.append(box);
   return wrap;
 }
 
