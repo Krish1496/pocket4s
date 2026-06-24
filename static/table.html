@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Puppy Poker - Table</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css?v=47" />
+  <link rel="stylesheet" href="/static/style.css?v=50" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -104,14 +104,18 @@
     </div>
     <div class="flex items-center justify-end flex-wrap gap-2">
       <span id="connDot" class="text-xs text-slate-400">connecting...</span>
-      <button id="btnLog" class="btn-muted text-sm">Log</button>
-      <button id="btnChat" class="btn-muted text-sm">Chat</button>
-      <button id="btnLedger" class="btn-muted text-sm">Ledger</button>
       <button id="requestsBtn" class="btn-primary text-sm hidden">Requests</button>
       <button id="settingsBtn" class="btn-muted text-sm hidden">Settings</button>
       <button id="shareBtn" class="btn-muted text-sm">Invite</button>
     </div>
   </header>
+
+  <!-- Bottom-left control dock (PokerNow places Log/Chat/Ledger here). -->
+  <div id="bottomDock" class="bottom-dock">
+    <button id="btnChat" class="btn-muted text-sm">Chat</button>
+    <button id="btnLog" class="btn-muted text-sm">Log</button>
+    <button id="btnLedger" class="btn-muted text-sm">Ledger</button>
+  </div>
 
   <!-- Slide-out table menu (secondary controls live here to save space) -->
   <div id="menuScrim" class="menu-scrim hidden"></div>
@@ -128,7 +132,7 @@
   <main class="px-3 py-4 lg:px-6">
     <!-- Host chip-management popover (filled + positioned by panels.js) -->
     <div id="hostMenu" class="host-menu hidden"></div>
-    <section class="max-w-[1100px] mx-auto">
+    <section class="max-w-[1500px] mx-auto">
       <div id="felt" class="felt mx-auto relative">
         <div class="felt-mark"><div class="mark-ring"></div><div class="mark-text">PUPPY POKER</div></div>
         <div id="pausedBanner" class="paused-banner hidden">⏸ PAUSED</div>
@@ -232,9 +236,9 @@
     <button id="voiceToggle" class="voice-toggle" title="Join/leave voice chat">Voice chat</button>
   </div>
 
-  <script src="/static/sfx.js?v=47"></script>
-  <script src="/static/poker.js?v=47"></script>
-  <script src="/static/panels.js?v=47"></script>
-  <script src="/static/voice.js?v=47"></script>
+  <script src="/static/sfx.js?v=50"></script>
+  <script src="/static/poker.js?v=50"></script>
+  <script src="/static/panels.js?v=50"></script>
+  <script src="/static/voice.js?v=50"></script>
 </body>
 </html>

@@ -345,14 +345,14 @@ function renderSeats() {
     if (portrait) {
       [x, y] = portraitSeat(visual, n);     // PokerNow column layout
     } else {
-      const rx = 46, ry = 44;               // desktop oval
+      const rx = 52, ry = 46;               // desktop oval -- wide, seats ring the rim (hero stays inside)
       const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
       x = 50 + rx * Math.cos(angle);
       y = 50 + ry * Math.sin(angle);
     }
     const occupant = bySeat[seatNum];
     if (occupant) felt.append(seatEl(occupant, x, y));
-    else felt.append(openSeatEl(seatNum, x, y));   // PokerNow shows empty SIT seats
+    else if (!iAmSeated) felt.append(openSeatEl(seatNum, x, y));   // hide SIT once you're seated
   }
 }
 

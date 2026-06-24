@@ -68,9 +68,9 @@ body {
    rail and a soft lighter-green rim highlight. (Phones override this to a tall
    rounded-rectangle further down -- see the portrait media query.) */
 .felt {
-  width: min(1100px, 95vw);
-  aspect-ratio: 1.72 / 1;
-  max-height: 72vh;
+  width: min(1500px, 92vw);
+  aspect-ratio: 1.95 / 1;
+  max-height: 66vh;
   margin: 0 auto;
   background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, var(--felt-mid) 64%, var(--felt-edge) 100%);
   border: 12px solid #0c0c12;
@@ -782,4 +782,18 @@ body {
 .felt-mark .mark-text {
   font-weight: 900; letter-spacing: 6px; font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.10);
+}
+
+/* Bottom-left control dock (Log / Chat / Ledger) ----------------------- */
+.bottom-dock {
+  position: fixed; left: 10px; bottom: 10px; z-index: 40;
+  display: flex; gap: 6px; align-items: center;
+}
+.bottom-dock .btn-muted {
+  background: rgba(20, 22, 27, 0.88);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+@media (max-width: 700px) {
+  .bottom-dock { left: 8px; bottom: 8px; }
+  .bottom-dock .btn-muted { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
 }
