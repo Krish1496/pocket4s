@@ -8,6 +8,11 @@ const SUIT = {
 };
 const RANK_LABEL = { T: "10" };
 
+// Small mic glyph shown on the top-left of a player's pod when they're in voice.
+const MIC_SVG = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">' +
+  '<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>' +
+  '<path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21a1 1 0 0 0 2 0v-3.08A7 7 0 0 0 19 11z"/></svg>';
+
 const tableId = location.pathname.split("/").pop();
 const pidKey = `pp_pid_${tableId}`;
 const nameKey = "pp_name";
@@ -388,6 +393,13 @@ function seatEl(p, xPct, yPct) {
     b.className = "badge";
     b.textContent = "D";
     pod.append(b);
+  }
+  if ((s.voice || []).some((v) => v.id === p.id)) {
+    const mic = document.createElement("div");
+    mic.className = "seat-mic";
+    mic.dataset.mic = p.id;
+    mic.innerHTML = MIC_SVG;
+    pod.append(mic);
   }
   if (p.is_turn && s.action_timeout > 0 && s.turn_seconds_left != null) {
     const bar = document.createElement("div");

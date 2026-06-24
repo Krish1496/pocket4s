@@ -51,7 +51,7 @@
         const sp = levelOf(V.analysers[pid]) > 0.045;   // speaking threshold
         if (!!V.speaking[pid] !== sp) { V.speaking[pid] = sp; changed = true; }
       }
-      if (changed) renderDock();
+      if (changed) renderMics();
       V.meter = requestAnimationFrame(tick);
     };
     V.meter = requestAnimationFrame(tick);
@@ -148,7 +148,7 @@
     idsInVoice().forEach((pid) => { if (pid !== me()) connectTo(pid); });
     startMeter();
     paintToggle();
-    renderDock();
+    renderMics();
   }
   function leave() {
     if (!V.on) return;
@@ -159,7 +159,7 @@
     delete V.analysers[me()];
     V.speaking = {};
     paintToggle();
-    renderDock();
+    renderMics();
   }
 
   // ---- called on every game-state update ------------------------------
@@ -169,36 +169,28 @@
       live.forEach((pid) => { if (pid !== me() && !V.peers[pid]) connectTo(pid); });
       Object.keys(V.peers).forEach((pid) => { if (!live.has(pid)) closePeer(pid); });
     }
-    renderDock();
+    renderMics();
   };
 
-  // ---- UI: bottom-right dock -----------------------------------------
+  // ---- UI: per-pod mic indicator -------------------------------------
   function paintToggle() {
     const b = $("voiceToggle");
     if (!b) return;
     b.classList.toggle("on", V.on);
     b.textContent = V.on ? "Leave voice" : "Voice chat";
   }
-  function renderDock() {
-    const list = $("voiceList");
-    if (!list) return;
-    const r = roster();
-    list.innerHTML = r.map((v) => {
-      const speaking = !!V.speaking[v.id];
-      const mine = v.id === me();
-      return `<div class="voice-chip${speaking ? " speaking" : ""}">
-        <span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="voice-name">${PP.escapeHtml(v.name)}${mine ? " (you)" : ""}</span>
-      </div>`;
-    }).join("");
-    list.classList.toggle("hidden", r.length === 0);
+  // Light up the little mic on each player's pod when they're talking.
+  function renderMics() {
+    document.querySelectorAll(".seat-mic[data-mic]").forEach((el) => {
+      el.classList.toggle("speaking", !!V.speaking[el.dataset.mic]);
+    });
   }
 
   function wire() {
     const b = $("voiceToggle");
     if (b) b.onclick = () => (V.on ? leave() : join());
     paintToggle();
-    renderDock();
+    renderMics();
   }
   if (document.readyState !== "loading") wire();
   else document.addEventListener("DOMContentLoaded", wire);
