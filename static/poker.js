@@ -338,20 +338,50 @@ function renderSeats() {
   const n = s.seat_count;
   const mySeat = s.you.seat;
   const iAmSeated = mySeat != null;   // seated players don't need empty seats
-  // On a tall portrait phone the felt is narrow, so pull the side seats in
-  // (smaller horizontal radius) and spread them vertically.
   const portrait = window.matchMedia("(max-width: 700px) and (orientation: portrait)").matches;
-  const rx = portrait ? 43 : 46;
-  const ry = portrait ? 45 : 44;
   for (let visual = 0; visual < n; visual++) {
     const seatNum = mySeat != null ? (mySeat + visual) % n : visual;
-    const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
-    const x = 50 + rx * Math.cos(angle);
-    const y = 50 + ry * Math.sin(angle);
+    let x, y;
+    if (portrait) {
+      [x, y] = portraitSeat(visual, n);     // PokerNow column layout
+    } else {
+      const rx = 46, ry = 44;               // desktop oval
+      const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
+      x = 50 + rx * Math.cos(angle);
+      y = 50 + ry * Math.sin(angle);
+    }
     const occupant = bySeat[seatNum];
     if (occupant) felt.append(seatEl(occupant, x, y));
     else if (!iAmSeated) felt.append(openSeatEl(seatNum, x, y));
   }
+}
+
+// PokerNow portrait layout. For 8-max we replicate PokerNow's exact visual
+// slots: an asymmetric tall oval where NO side seat sits on the board's row
+// (so pods never overlap the community cards). Hero bottom, one seat top.
+function portraitSeat(v, n) {
+  if (n === 8) {
+    const slots = [
+      [50, 90],            // 0 hero, bottom-center
+      [12, 75], [12, 56], [12, 35],   // 1-3 left column (bottom -> top)
+      [50, 12],            // 4 top-center
+      [88, 22], [88, 42], [88, 62],   // 5-7 right column (top -> bottom)
+    ];
+    return slots[v];
+  }
+  // Generic fallback for other table sizes (hero bottom, one top, columns).
+  if (v === 0) return [50, 90];
+  const topIndex = Math.round(n / 2);
+  if (v === topIndex) return [50, 12];
+  const X_L = 11, X_R = 89, Y_HI = 22, Y_LO = 78;
+  if (v < topIndex) {                            // left column: bottom -> top
+    const k = topIndex - 1, i = v - 1;
+    const frac = k > 1 ? i / (k - 1) : 0.5;
+    return [X_L, Y_LO - frac * (Y_LO - Y_HI)];
+  }
+  const k = n - 1 - topIndex, j = v - topIndex - 1;   // right column: top -> bottom
+  const frac = k > 1 ? j / (k - 1) : 0.5;
+  return [X_R, Y_HI + frac * (Y_LO - Y_HI)];
 }
 
 function seatEl(p, xPct, yPct) {

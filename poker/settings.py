@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 
-SEAT_COUNT = 10
+SEAT_COUNT = 8
 
 
 @dataclass
