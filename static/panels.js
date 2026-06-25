@@ -380,6 +380,13 @@
     $("miniChatInput").addEventListener("keydown", (e) => {
       if (e.key === "Escape") e.target.blur();
     });
+    // Mobile: toggle the mini chat open/closed (it's hidden by default there).
+    const mcToggle = $("miniChatToggle");
+    if (mcToggle) mcToggle.onclick = () => {
+      const mc = $("miniChat");
+      const open = mc.classList.toggle("open");
+      if (open) { const i = $("miniChatInput"); if (i) i.focus(); }
+    };
   }
   window.wirePanels = wirePanels;
 

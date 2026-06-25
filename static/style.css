@@ -702,15 +702,16 @@ body {
 @media (max-width: 700px) and (orientation: portrait) {
   main { padding-bottom: 0.4rem; }
   .felt {
-    width: 94vw;
-    height: min(63dvh, 132vw);    /* leaves room for the sticky action bar */
+    width: 96vw;
+    height: min(67dvh, 150vw);    /* bigger board, leaves room for action bar */
     aspect-ratio: auto;
     max-height: none;
     border-radius: 56px;          /* PokerNow: rounded RECTANGLE, not an oval */
     border-width: 13px;
   }
-  /* Tuck the board cards a touch tighter so 5 fit across the narrow felt. */
-  #board { gap: 0.25rem; }
+  /* Smaller community cards so they clear the side seats (3/4/8/9). */
+  #board .card, #board .flip3d { --card-w: clamp(28px, 8vw, 42px); }
+  #board { gap: 0.2rem; }
 }
 
 /* Voice chat dock (bottom-right, fully bottom) --------------------------- */
@@ -859,4 +860,13 @@ body {
   .seat.zone-right .cards:not(:empty) + .pod { margin-top: 0; }
   .seat.zone-left  .cards { margin-left: -22px; }     /* overlap the pod edge */
   .seat.zone-right .cards { margin-right: -22px; }
+}
+
+/* Mobile: mini chat is hidden until the Chat button is tapped. ---------- */
+.mobile-only { display: none; }
+@media (max-width: 700px) {
+  .mobile-only { display: inline-flex; }
+  #miniChat { display: none; }
+  #miniChat.open { display: block; }
+  #miniChat { width: 64vw; max-width: 320px; }
 }
