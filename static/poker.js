@@ -345,15 +345,29 @@ function renderSeats() {
     if (portrait) {
       [x, y] = portraitSeat(visual, n);     // PokerNow column layout
     } else {
-      const rx = 52, ry = 46;               // desktop oval -- wide, seats ring the rim (hero stays inside)
-      const angle = Math.PI / 2 + (visual * 2 * Math.PI) / n;
-      x = 50 + rx * Math.cos(angle);
-      y = 50 + ry * Math.sin(angle);
+      [x, y] = desktopSeat(visual, n);      // PokerNow racetrack layout
     }
     const occupant = bySeat[seatNum];
     if (occupant) felt.append(seatEl(occupant, x, y));
     else if (!iAmSeated) felt.append(openSeatEl(seatNum, x, y));   // hide SIT once you're seated
   }
+}
+
+// PokerNow DESKTOP racetrack: 2 seats along the top, 2 along the bottom, and
+// 3 down each side -- pods sit just outside the oval rim. Hero is v0 (bottom).
+function desktopSeat(v, n) {
+  if (n === 10) {
+    const slots = [
+      [61, 99], [39, 99],              // 0 hero + 1: bottom pair
+      [-1, 80], [-3, 50], [-1, 20],    // 2-4: left side (bottom -> top)
+      [39, 0], [61, 0],                // 5-6: top pair
+      [101, 20], [103, 50], [101, 80], // 7-9: right side (top -> bottom)
+    ];
+    return slots[v];
+  }
+  const rx = 52, ry = 46;              // fallback ellipse for non-10 tables
+  const angle = Math.PI / 2 + (v * 2 * Math.PI) / n;
+  return [50 + rx * Math.cos(angle), 50 + ry * Math.sin(angle)];
 }
 
 // PokerNow portrait layout. For 8-max we replicate PokerNow's exact visual
@@ -415,9 +429,10 @@ function seatEl(p, xPct, yPct) {
   const crown = p.is_owner ? " \u2605" : "";
   const topup = p.pending_topup ? ` <span class="text-emerald-400">(+${p.pending_topup})</span>` : "";
   const awayTag = p.away ? ' <span class="away-tag">AWAY</span>' : "";
+  const winPlus = winAmount != null ? ` <span class="win-plus">+${winAmount}</span>` : "";
   pod.innerHTML =
     `<div class="name">${escapeHtml(p.name)}${crown}${disc}${awayTag}</div>` +
-    `<div class="stack">${p.stack}${topup}</div>`;
+    `<div class="stack">${p.stack}${topup}${winPlus}</div>`;
   if (p.is_button) {
     const b = document.createElement("div");
     b.className = "badge";
@@ -474,13 +489,11 @@ function seatEl(p, xPct, yPct) {
     const bet = document.createElement("div");
     bet.className = "bet-chip";
     bet.textContent = p.round_bet;
+    // Push the chip from the pod TOWARD the table center (where the pot sits).
+    const ang = Math.atan2(50 - yPct, 50 - xPct);
+    const dx = Math.cos(ang) * 78, dy = Math.sin(ang) * 60;
+    bet.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
     wrap.append(bet);
-  }
-  if (winAmount != null) {
-    const tag = document.createElement("div");
-    tag.className = "win-tag";
-    tag.textContent = "WON +" + winAmount;
-    wrap.append(tag);
   }
   const bubble = PP.bubbles && PP.bubbles[p.id];
   if (bubble && performance.now() < bubble.until) {

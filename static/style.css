@@ -68,9 +68,9 @@ body {
    rail and a soft lighter-green rim highlight. (Phones override this to a tall
    rounded-rectangle further down -- see the portrait media query.) */
 .felt {
-  width: min(1500px, 92vw);
+  width: min(1180px, 76vw);
   aspect-ratio: 1.95 / 1;
-  max-height: 66vh;
+  max-height: 64vh;
   margin: 0 auto;
   background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, var(--felt-mid) 64%, var(--felt-edge) 100%);
   border: 12px solid #0c0c12;
@@ -138,7 +138,9 @@ body {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 .seat .bet-chip {
-  margin-top: 4px;
+  position: absolute;
+  left: 50%; top: 50%;
+  z-index: 4;
   display: inline-block;
   background: var(--chip);
   color: #1a1a1a;
@@ -148,6 +150,7 @@ body {
   font-weight: 900;
   letter-spacing: 0.2px;
   padding: 3px 13px;
+  white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 /* PokerNow hole cards: two cards FANNED (tilted opposite ways) with the
@@ -834,3 +837,7 @@ body {
   .mini-chat { width: 52vw; max-width: 280px; }
   .mini-chat-msgs { height: 80px; }
 }
+
+/* Win amount shown inline beside the stack (no banner). */
+.seat .win-plus { color: #22c55e; font-weight: 900; }
+.seat.turn .win-plus { color: #15803d; }
