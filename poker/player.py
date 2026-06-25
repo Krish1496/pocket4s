@@ -36,6 +36,8 @@ class Player:
         self.sit_out_next = False
         # Player toggled themselves 'away' -- sit out every hand until back.
         self.away = False
+        # Toggled 'away' WHILE in a live hand: finish this hand, then go away.
+        self.away_pending = False
         # Persistent auto check/fold mode (acts the moment it's your turn).
         self.auto_check_fold = False
         # One-shot pre-move queued while it's not your turn:

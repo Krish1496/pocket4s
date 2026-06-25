@@ -55,7 +55,7 @@ def _player_view(g: Game, p, viewer_id: str) -> dict:
         "committed": p.committed,
         "status": p.status.value,
         "connected": p.connected,
-        "away": p.away,
+        "away": p.away or p.away_pending,
         "pending_topup": p.pending_topup,
         "is_button": g.players.index(p) == g.button if g.players else False,
         "is_turn": g.to_act == p.id,
@@ -147,7 +147,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
             "can_check": viewer is not None and g.to_act == viewer_id and to_call == 0,
             "stack": viewer.stack if viewer else 0,
             "in_hand": viewer.in_hand if viewer else False,
-            "away": viewer.away if viewer else False,
+            "away": (viewer.away or viewer.away_pending) if viewer else False,
             "auto_check_fold": viewer.auto_check_fold if viewer else False,
             "premove": viewer.premove if viewer else None,
             # Can I show my cards right now, and which have I already shown?

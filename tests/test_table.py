@@ -276,6 +276,36 @@ def test_away_player_is_sat_out_on_reset():
     assert g.get("b").status.value == "sitting_out"
 
 
+def test_cannot_start_when_only_one_player_is_dealable():
+    g = make_table()
+    _seat_two(g)
+    g.get("b").away = True            # only Alice is dealable
+    assert len(g.dealable()) == 1
+    assert not g.can_start()
+    with pytest.raises(ValueError):
+        g.start_hand()
+
+
+def test_going_away_mid_hand_defers_until_hand_ends():
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    actor = g.to_act
+    g.set_away(actor, True)                       # toggle away during the hand
+    assert g.get(actor).away is False             # not yet -- still in this hand
+    assert g.get(actor).away_pending is True
+    assert g.get(actor).in_hand                   # NOT auto-folded
+    # finish the hand; the away then takes effect
+    g.auto_advance()
+    if g.phase.value != "showdown":
+        # play it out via timeouts if still going
+        while g.to_act is not None:
+            g.auto_act_timeout()
+    g.end_hand()
+    assert g.get(actor).away is True
+    assert g.get(actor).away_pending is False
+
+
 def test_auto_check_fold_folds_facing_a_bet():
     g = make_table(action_timeout=0)
     _seat_two(g)

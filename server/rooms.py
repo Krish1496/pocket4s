@@ -205,7 +205,7 @@ class Room:
         g = self.game
         ready = (g.settings.auto_deal and g.phase.value == "showdown"
                  and not g.paused
-                 and len(g.seated_with_chips()) >= 2)
+                 and len(g.dealable()) >= 2)
         if not ready:
             return
         if asyncio.current_task() is self.autodeal_task:
@@ -222,7 +222,7 @@ class Room:
         async with self.lock:
             g = self.game
             if (g.settings.auto_deal and g.phase.value == "showdown"
-                    and g.hand_no == hand_no and len(g.seated_with_chips()) >= 2):
+                    and g.hand_no == hand_no and len(g.dealable()) >= 2):
                 g.end_hand()
                 g.start_hand()
                 await self.broadcast()

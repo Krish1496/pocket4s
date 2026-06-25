@@ -116,6 +116,13 @@ class Game:
     def seated_with_chips(self) -> list[Player]:
         return [p for p in self.players if p.stack > 0]  # no `connected` check (blip-safe)
 
+    def dealable(self) -> list[Player]:
+        """Players who will actually be dealt the NEXT hand: have chips and
+        aren't away / sitting out. Used to decide if a hand can run at all."""
+        return [p for p in self.players
+                if p.stack > 0 and not p.away and not p.away_pending
+                and not p.sit_out_next]
+
     def request_sit(self, pid: str, seat: int, amount: int) -> None:
         if self.get(pid):
             raise ValueError("You are already seated")
@@ -256,7 +263,7 @@ class Game:
             self._log(f"{self.members.get(self.owner, 'Player')} is now the host")
 
     def can_start(self) -> bool:
-        return self.phase == Phase.WAITING and len(self.seated_with_chips()) >= 2
+        return self.phase == Phase.WAITING and len(self.dealable()) >= 2
 
     def start_hand(self) -> None:
         if not self.can_start():
@@ -615,6 +622,9 @@ class Game:
             p.hole = []
             p.round_bet = 0
             p.committed = 0
+            if p.away_pending:           # they went away mid-hand -> now apply it
+                p.away = True
+                p.away_pending = False
             if p.status != Status.SITTING_OUT:
                 p.status = Status.SITTING_OUT
 

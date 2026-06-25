@@ -9,7 +9,17 @@ from .settings import SEAT_COUNT
 
 
 def set_away(game, pid: str, value: bool) -> None:
-    _seated(game, pid).away = bool(value)
+    p = _seated(game, pid)
+    if not value:
+        p.away = False
+        p.away_pending = False
+        return
+    # Turning away ON: if they're in a LIVE hand, let them finish it first --
+    # don't auto-fold. Otherwise take effect immediately.
+    if p.in_hand and game.phase.value != "waiting":
+        p.away_pending = True
+    else:
+        p.away = True
 
 
 def set_auto_check_fold(game, pid: str, value: bool) -> None:
