@@ -412,6 +412,31 @@ def test_run_it_twice_uses_minimum_vote_and_conserves_chips():
     assert sum(p.stack for p in g.players) == 400   # every chip paid back
 
 
+def test_run_vote_timeout_defaults_to_minimum_of_others():
+    from poker import runs
+    g = make_table(action_timeout=0, run_it_twice=True)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    g.set_run_vote("a", 4)        # only A votes; B never chooses
+    assert g.run_vote is not None
+    g.run_vote_timeout()          # clock expires -> B defaults to A's 4 (the min cast)
+    assert g.run_vote is None
+    assert g.runout is not None
+    runs.finish_runout(g)
+    assert g.last_results["run_count"] == 4
+
+
+def test_run_vote_does_not_reveal_opponent_cards():
+    from server.serialize import snapshot
+    g = make_table(action_timeout=0, run_it_twice=True)
+    _seat_two(g)
+    _drive_all_in_heads_up(g)
+    assert g.run_vote is not None
+    snap = snapshot(g, "a")       # A's view during the vote
+    bob = next(p for p in snap["players"] if p["id"] == "b")
+    assert bob["hole"] == ["back", "back"]   # B's cards stay hidden
+
+
 def test_runout_reveals_one_street_at_a_time():
     from poker import runs
     g = make_table(action_timeout=0, run_it_twice=False)

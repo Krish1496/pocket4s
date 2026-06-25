@@ -561,6 +561,10 @@ class Game:
     def set_run_vote(self, pid: str, times: int) -> None:
         runs.vote(self, pid, times)
 
+    def run_vote_timeout(self) -> bool:
+        """Vote clock expired -> default missing votes to the minimum."""
+        return runs.resolve_timeout(self)
+
     def _award_uncontested(self, winner: Player) -> None:
         pot = sum(p.committed for p in self.players)
         winner.stack += pot

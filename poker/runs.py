@@ -20,6 +20,7 @@ from .potting import build_pots, settle
 from .equity import win_chances
 
 MAX_RUNS = 5
+VOTE_SECONDS = 8     # time limit to choose how many times to run
 
 
 def should_offer(game) -> bool:
@@ -57,9 +58,11 @@ def offer(game) -> None:
     voters = [p.id for p in game.players if p.in_hand]
     votes = {p.id: (None if p.connected else 1)
              for p in game.players if p.in_hand}
-    game.run_vote = {"voters": voters, "votes": votes, "max": max_runs(game)}
+    import time
+    game.run_vote = {"voters": voters, "votes": votes, "max": max_runs(game),
+                     "deadline": time.monotonic() + VOTE_SECONDS}
     game._set_to_act(None)
-    _recompute_equity(game)
+    game.equity = {}     # don't reveal odds while the vote is still open
     game._log("All in! Players are choosing how many times to run it.")
     _maybe_resolve(game)
 
@@ -80,6 +83,23 @@ def _maybe_resolve(game) -> None:
     n = min(rv["votes"].values())
     game.run_vote = None
     begin_runout(game, n)
+
+
+def resolve_timeout(game) -> bool:
+    """Vote clock expired: anyone who didn't choose defaults to the MINIMUM
+    of what others picked (or 1 if nobody voted), then resolve. Returns True
+    if it resolved a pending vote."""
+    rv = game.run_vote
+    if not rv:
+        return False
+    cast = [v for v in rv["votes"].values() if v is not None]
+    fallback = min(cast) if cast else 1
+    for pid, v in rv["votes"].items():
+        if v is None:
+            rv["votes"][pid] = fallback
+    game._log("Run-it vote timed out -- using the minimum choice.")
+    _maybe_resolve(game)
+    return True
 
 
 # --- paced runout ------------------------------------------------------

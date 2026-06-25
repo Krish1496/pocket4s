@@ -870,3 +870,6 @@ body {
   #miniChat.open { display: block; }
   #miniChat { width: 64vw; max-width: 320px; }
 }
+
+/* Run-it-twice vote countdown. */
+.rv-clock { color: #fca5a5; font-weight: 800; margin-left: 6px; }

@@ -18,6 +18,14 @@ def _pot_view(g: Game, r: dict) -> dict:
             "hand_name": describe(r["score"]) if r.get("score") else None}
 
 
+def _vote_seconds_left(rv: dict):
+    dl = rv.get("deadline")
+    if dl is None:
+        return None
+    import time
+    return max(0, round(dl - time.monotonic()))
+
+
 def _hand_name(g: Game, p) -> str | None:
     if not p.hole or len(g.board) < 3:
         return None
@@ -30,10 +38,10 @@ def _hand_name(g: Game, p) -> str | None:
 def _player_view(g: Game, p, viewer_id: str) -> dict:
     own = p.id == viewer_id
     # Cards auto-reveal only for hands the showdown logic decided must show
-    # (the aggressor + anyone who out-showed them), or while the run-it-twice
-    # vote/runout is in progress (everyone's cards are up then).
+    # (the aggressor + anyone who out-showed them), or once the run-it-twice
+    # RUNOUT has begun (after everyone has chosen how many times to run).
+    # During the vote itself, opponents' cards stay hidden.
     auto = ((g.phase == Phase.SHOWDOWN and p.id in g.showdown_reveals)
-            or (g.run_vote and p.in_hand and p.hole)
             or (g.runout and p.in_hand and p.hole))
     full = own or auto
     if full:
@@ -101,6 +109,7 @@ def snapshot(g: Game, viewer_id: str) -> dict:
             "voters": [{"name": g.get(pid).name if g.get(pid) else "?",
                         "done": rv["votes"][pid] is not None,
                         "you": pid == viewer_id} for pid in rv["voters"]],
+            "seconds_left": _vote_seconds_left(rv),
         }
 
     # Owner sees the full request queue; others only see their own request.

@@ -406,7 +406,8 @@
     if (rv.your_turn) {
       let btns = "";
       for (let i = 1; i <= rv.max; i++) btns += `<button class="rv" data-times="${i}">${i}\u00d7</button>`;
-      bar.innerHTML = `<div class="rv-title">\u2665 All in! How many times to run the board?</div>` +
+      const clk = rv.seconds_left != null ? ` <span class="rv-clock">${rv.seconds_left}s</span>` : "";
+      bar.innerHTML = `<div class="rv-title">\u2665 All in! How many times to run the board?${clk}</div>` +
         `<div class="rv-row">${btns}</div><div class="rv-tally">${tally}</div>`;
       bar.querySelectorAll(".rv").forEach((b) =>
         b.onclick = () => PP.send({ type: "run_vote", times: +b.dataset.times }));

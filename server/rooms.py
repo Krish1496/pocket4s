@@ -38,6 +38,7 @@ class Room:
     autoplay_task: asyncio.Task | None = field(default=None)
     runout_task: asyncio.Task | None = field(default=None)
     street_task: asyncio.Task | None = field(default=None)
+    runvote_task: asyncio.Task | None = field(default=None)
 
     def connect(self, pid: str, ws: WebSocket) -> None:
         self.sockets.setdefault(pid, set()).add(ws)
@@ -87,6 +88,7 @@ class Room:
         self._arm_autoplay()
         self._arm_runout()
         self._arm_street()
+        self._arm_runvote()
 
     # --- action clock ---------------------------------------------------
     def _arm_timer(self) -> None:
@@ -169,7 +171,39 @@ class Room:
             g.reveal_next_street()
             await self.broadcast()
 
-    # --- paced all-in runout (flop ... turn ... river, one street at a time)
+    # --- run-it-twice vote clock (8s, then default to the minimum) -------
+    def _arm_runvote(self) -> None:
+        g = self.game
+        if g.paused or not g.run_vote:
+            return
+        if asyncio.current_task() is self.runvote_task:
+            return
+        if self.runvote_task and not self.runvote_task.done():
+            return
+        self.runvote_task = asyncio.create_task(self._run_runvote(g.hand_no))
+
+    async def _run_runvote(self, hand_no: int) -> None:
+        import time
+        while True:
+            g = self.game
+            rv = g.run_vote
+            if not rv or g.hand_no != hand_no:
+                return
+            left = rv.get("deadline", 0) - time.monotonic()
+            try:
+                await asyncio.sleep(max(0.05, left + 0.1))
+            except asyncio.CancelledError:
+                return
+            async with self.lock:
+                g = self.game
+                rv = g.run_vote
+                if not rv or g.hand_no != hand_no or g.paused:
+                    return
+                if rv.get("deadline", 0) - time.monotonic() > 0:
+                    continue   # deadline moved; wait again
+                if g.run_vote_timeout():
+                    await self.broadcast()
+                return
     RUNOUT_DELAY = 2.5  # seconds between each board reveal
 
     def _arm_runout(self) -> None:
