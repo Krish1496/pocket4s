@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Puppy Poker - Table</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css?v=50" />
+  <link rel="stylesheet" href="/static/style.css?v=52" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -110,11 +110,19 @@
     </div>
   </header>
 
-  <!-- Bottom-left control dock (PokerNow places Log/Chat/Ledger here). -->
+  <!-- Bottom-left: an always-on mini chat window + Log/Ledger. -->
   <div id="bottomDock" class="bottom-dock">
-    <button id="btnChat" class="btn-muted text-sm">Chat</button>
-    <button id="btnLog" class="btn-muted text-sm">Log</button>
-    <button id="btnLedger" class="btn-muted text-sm">Ledger</button>
+    <div id="miniChat" class="mini-chat">
+      <div id="miniChatMsgs" class="mini-chat-msgs"></div>
+      <form id="miniChatForm" class="mini-chat-form">
+        <input id="miniChatInput" type="text" maxlength="140" placeholder="Chat (M)" autocomplete="off" />
+      </form>
+    </div>
+    <div class="dock-btns">
+      <button id="btnLog" class="btn-muted text-sm">Log</button>
+      <button id="btnLedger" class="btn-muted text-sm">Ledger</button>
+      <button id="voiceToggle" class="btn-muted text-sm" title="Join/leave voice chat">Voice chat</button>
+    </div>
   </div>
 
   <!-- Slide-out table menu (secondary controls live here to save space) -->
@@ -230,15 +238,11 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
-  <!-- Voice chat dock: join/leave button (bottom-right). Who's talking is
-       shown by the mic lighting up on each player's pod. -->
-  <div id="voiceDock" class="voice-dock">
-    <button id="voiceToggle" class="voice-toggle" title="Join/leave voice chat">Voice chat</button>
-  </div>
+  <!-- (Voice toggle moved into the bottom-left dock; mic on each pod shows who's talking.) -->
 
-  <script src="/static/sfx.js?v=50"></script>
-  <script src="/static/poker.js?v=50"></script>
-  <script src="/static/panels.js?v=50"></script>
-  <script src="/static/voice.js?v=50"></script>
+  <script src="/static/sfx.js?v=52"></script>
+  <script src="/static/poker.js?v=52"></script>
+  <script src="/static/panels.js?v=52"></script>
+  <script src="/static/voice.js?v=52"></script>
 </body>
 </html>

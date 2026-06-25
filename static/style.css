@@ -426,6 +426,18 @@ body {
   flex-direction: column;
   gap: 0.55rem;
 }
+/* Desktop: PokerNow puts the action buttons in the BOTTOM-RIGHT, by the hero. */
+@media (min-width: 701px) {
+  .action-bar {
+    position: fixed;
+    right: 22px;
+    bottom: 18px;
+    margin: 0;
+    width: 440px;
+    max-width: 42vw;
+    z-index: 35;
+  }
+}
 .act-btn {
   background: rgba(20, 22, 21, 0.7);
   border: 1.5px solid #3a3a3a;
@@ -784,16 +796,41 @@ body {
   color: rgba(255, 255, 255, 0.10);
 }
 
-/* Bottom-left control dock (Log / Chat / Ledger) ----------------------- */
+/* Bottom-left control dock: always-on mini chat + Log/Ledger ----------- */
 .bottom-dock {
   position: fixed; left: 10px; bottom: 10px; z-index: 40;
-  display: flex; gap: 6px; align-items: center;
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
 }
+.bottom-dock .dock-btns { display: flex; gap: 6px; }
 .bottom-dock .btn-muted {
   background: rgba(20, 22, 27, 0.88);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 }
+.mini-chat {
+  width: 280px;
+  background: rgba(16, 17, 22, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.mini-chat-msgs {
+  height: 120px; overflow-y: auto;
+  padding: 8px 10px; font-size: 12.5px; line-height: 1.45;
+  color: #cfd3da;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.mini-chat-msgs::-webkit-scrollbar { width: 6px; }
+.mini-chat-msgs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.mini-chat-form { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.mini-chat-form input {
+  width: 100%; background: transparent; border: none; outline: none;
+  padding: 8px 10px; font-size: 13px; color: #fff;
+}
+.mini-chat-form input::placeholder { color: rgba(255, 255, 255, 0.4); }
 @media (max-width: 700px) {
   .bottom-dock { left: 8px; bottom: 8px; }
   .bottom-dock .btn-muted { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+  .mini-chat { width: 52vw; max-width: 280px; }
+  .mini-chat-msgs { height: 80px; }
 }

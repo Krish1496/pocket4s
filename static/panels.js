@@ -125,20 +125,27 @@
     $("tabHand").scrollTop = $("tabHand").scrollHeight;
 
     const chat = $("chatMsgs");
+    const mini = $("miniChatMsgs");
     chat.innerHTML = "";
+    if (mini) mini.innerHTML = "";
     (s.chat_log || []).forEach((m) => {
-      const div = document.createElement("div");
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "font-semibold";
-      nameSpan.style.color = chatColor(m.id);
-      nameSpan.textContent = m.name + ": ";
-      const textSpan = document.createElement("span");
-      textSpan.className = "text-slate-200";
-      textSpan.textContent = m.text;
-      div.append(nameSpan, textSpan);
-      chat.append(div);
+      const build = () => {
+        const div = document.createElement("div");
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "font-semibold";
+        nameSpan.style.color = chatColor(m.id);
+        nameSpan.textContent = m.name + ": ";
+        const textSpan = document.createElement("span");
+        textSpan.className = "text-slate-200";
+        textSpan.textContent = m.text;
+        div.append(nameSpan, textSpan);
+        return div;
+      };
+      chat.append(build());
+      if (mini) mini.append(build());
     });
     $("tabChat").scrollTop = $("tabChat").scrollHeight;
+    if (mini) mini.scrollTop = mini.scrollHeight;
 
     renderLedger(s);
   }
@@ -271,7 +278,6 @@
 
     // Drawer toggles -- the panel is hidden until you click one of these.
     $("btnLog").onclick = () => openDrawer("hand");
-    $("btnChat").onclick = () => openDrawer("chat");
     $("btnLedger").onclick = () => openDrawer("ledger");
     $("requestsBtn").onclick = () => openDrawer("hand");
     $("drawerClose").onclick = closeDrawer;
@@ -363,6 +369,17 @@
       const text = $("chatInput").value.trim();
       if (text) { PP.send({ type: "chat", text }); $("chatInput").value = ""; }
     };
+
+    // Always-on bottom-left mini chat.
+    $("miniChatForm").onsubmit = (e) => {
+      e.preventDefault();
+      const inp = $("miniChatInput");
+      const text = inp.value.trim();
+      if (text) { PP.send({ type: "chat", text }); inp.value = ""; }
+    };
+    $("miniChatInput").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") e.target.blur();
+    });
   }
   window.wirePanels = wirePanels;
 
@@ -421,11 +438,15 @@
       const key = e.key.toLowerCase();
       if (key === "m" && !typing) {
         e.preventDefault();
-        if (window.openDrawer) window.openDrawer("chat");
-        setTimeout(() => { const c = $("chatInput"); if (c) c.focus(); }, 60);
+        const c = $("miniChatInput"); if (c) c.focus();
         return;
       }
-      if (key === "escape") { if (window.closeSideMenu) window.closeSideMenu(); if (window.closeDrawer) window.closeDrawer(); return; }
+      if (key === "escape") {
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        if (window.closeSideMenu) window.closeSideMenu();
+        if (window.closeDrawer) window.closeDrawer();
+        return;
+      }
       if (typing) return;
       // Show-your-cards at showdown: 1 = first card, 2 = second, 3 = both.
       if ((key === "1" || key === "2" || key === "3") && canShowCards(PP.state)) {
@@ -479,7 +500,7 @@
         if (!verb) break;
         const amt = rest.match(/\d+/);
         PP.flash[byName[nm]] = { text: verb + (amt ? " " + amt[0] : ""),
-                                until: Date.now() + 1400 };
+                                started: Date.now(), until: Date.now() + 1400 };
         if (window.PPSFX) {
           const k = rest.split(" ")[0];
           PPSFX.play(k === "bets" ? "raise" : (k === "raises" ? "raise" :

@@ -453,6 +453,9 @@ function seatEl(p, xPct, yPct) {
     const f = document.createElement("div");
     f.className = "action-flash";
     f.textContent = fl.text;
+    // Resume the animation where it actually is, so re-renders don't restart it.
+    const elapsed = Date.now() - (fl.started || Date.now());
+    f.style.animationDelay = `-${elapsed}ms`;
     wrap.append(f);
   }
   if (p.win_pct != null) {
@@ -485,6 +488,8 @@ function seatEl(p, xPct, yPct) {
     b.className = "chat-bubble";
     b.dataset.until = bubble.until;
     b.textContent = bubble.text;
+    const elapsed = performance.now() - (bubble.started || performance.now());
+    b.style.animationDelay = `-${elapsed}ms`;   // don't restart the pop on re-render
     wrap.append(b);
   }
   return wrap;
