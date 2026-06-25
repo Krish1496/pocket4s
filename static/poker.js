@@ -357,17 +357,20 @@ function renderSeats() {
 // 3 down each side -- pods sit just outside the oval rim. Hero is v0 (bottom).
 function desktopSeat(v, n) {
   if (n === 10) {
+    // All 10 sit on ONE ellipse (center 50,50; semi-axes ~54 x 52) so every
+    // seat is the same distance from the felt rim. 3/5/8/10 are the angular
+    // midpoints between their fixed neighbours.
     const slots = [
       [66, 99],      // 1 hero (bottom-right) -- fixed
       [34, 99],      // 2 bottom-left -- fixed
-      [4, 74.5],     // 3 pushed out (convex)
+      [6.5, 80.8],   // 3 even between 2 and 4, on the ring
       [-4, 50],      // 4 left-mid -- fixed
-      [4, 25.5],     // 5 pushed out (convex)
+      [6.5, 19.2],   // 5 even between 4 and 6, on the ring
       [34, 0],       // 6 top-left -- fixed
       [66, 0],       // 7 top-right -- fixed
-      [96, 25.5],    // 8 pushed out (convex)
+      [93.5, 19.2],  // 8 even between 7 and 9, on the ring
       [104, 50],     // 9 right-mid -- fixed
-      [96, 74.5],    // 10 pushed out (convex)
+      [93.5, 80.8],  // 10 even between 9 and 1, on the ring
     ];
     return slots[v];
   }
