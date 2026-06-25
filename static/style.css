@@ -841,3 +841,22 @@ body {
 /* Win amount shown inline beside the stack (no banner). */
 .seat .win-plus { color: #22c55e; font-weight: 900; }
 .seat.turn .win-plus { color: #15803d; }
+
+/* PokerNow PC: hole cards sit on the side of the pod that FACES the table
+   center -- above for bottom seats, below for top, beside for the sides. */
+@media (min-width: 701px) {
+  .seat.zone-top { display: flex; flex-direction: column-reverse; align-items: center; }
+  .seat.zone-top .cards:not(:empty) + .pod { margin-top: 0; }
+  .seat.zone-top .cards { margin-top: -28px; }
+
+  .seat.zone-left, .seat.zone-right {
+    display: flex; align-items: center; width: auto;
+  }
+  .seat.zone-left  { flex-direction: row-reverse; }  /* pod left,  cards right (toward center) */
+  .seat.zone-right { flex-direction: row; }          /* cards left (toward center), pod right */
+  .seat.zone-left .cards, .seat.zone-right .cards { min-height: 0; }
+  .seat.zone-left  .cards:not(:empty) + .pod,
+  .seat.zone-right .cards:not(:empty) + .pod { margin-top: 0; }
+  .seat.zone-left  .cards { margin-left: -22px; }     /* overlap the pod edge */
+  .seat.zone-right .cards { margin-right: -22px; }
+}

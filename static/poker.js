@@ -353,6 +353,14 @@ function renderSeats() {
   }
 }
 
+// Which side of the pod the hole cards sit on (they face the table center,
+// like PokerNow): bottom -> above, top -> below, sides -> toward center.
+function seatZone(x, y) {
+  if (y >= 65) return "bottom";
+  if (y <= 28) return "top";
+  return x < 50 ? "left" : "right";
+}
+
 // PokerNow DESKTOP racetrack: 2 seats along the top, 2 along the bottom, and
 // 3 down each side -- pods sit just outside the oval rim. Hero is v0 (bottom).
 function desktopSeat(v, n) {
@@ -415,6 +423,8 @@ function seatEl(p, xPct, yPct) {
   if (p.is_turn) wrap.classList.add("turn");
   if (p.status === "folded") wrap.classList.add("folded");
   if (p.away) wrap.classList.add("away");
+  // Zone drives where the hole cards sit (PokerNow: cards face the table center).
+  wrap.classList.add("zone-" + seatZone(xPct, yPct));
   const winAmount = PP.anim.winners[p.id];
   if (winAmount != null) wrap.classList.add("winner");
   wrap.style.left = xPct + "%";
