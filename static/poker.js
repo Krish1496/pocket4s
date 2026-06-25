@@ -358,10 +358,10 @@ function renderSeats() {
 function desktopSeat(v, n) {
   if (n === 10) {
     const slots = [
-      [61, 99], [39, 99],              // 0 hero + 1: bottom pair
-      [-1, 80], [-3, 50], [-1, 20],    // 2-4: left side (bottom -> top)
-      [39, 0], [61, 0],                // 5-6: top pair
-      [101, 20], [103, 50], [101, 80], // 7-9: right side (top -> bottom)
+      [66, 99], [34, 99],              // 0 hero + 1: bottom pair (wider gap)
+      [-2, 78], [-4, 50], [-2, 22],    // 2-4: left side (evenly spaced)
+      [34, 0], [66, 0],                // 5-6: top pair (wider gap)
+      [102, 22], [104, 50], [102, 78], // 7-9: right side (evenly spaced)
     ];
     return slots[v];
   }
