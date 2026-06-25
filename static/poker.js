@@ -487,9 +487,9 @@ function seatEl(p, xPct, yPct) {
     const f = document.createElement("div");
     f.className = "action-flash";
     f.textContent = fl.text;
-    // Resume the animation where it actually is, so re-renders don't restart it.
-    const elapsed = Date.now() - (fl.started || Date.now());
-    f.style.animationDelay = `-${elapsed}ms`;
+    f.dataset.until = fl.until;
+    if (fl.shown) f.classList.add("no-anim");   // only animate the FIRST time
+    fl.shown = true;
     wrap.append(f);
   }
   if (p.win_pct != null) {
@@ -520,8 +520,8 @@ function seatEl(p, xPct, yPct) {
     b.className = "chat-bubble";
     b.dataset.until = bubble.until;
     b.textContent = bubble.text;
-    const elapsed = performance.now() - (bubble.started || performance.now());
-    b.style.animationDelay = `-${elapsed}ms`;   // don't restart the pop on re-render
+    if (bubble.shown) b.classList.add("no-anim");   // only animate the FIRST time
+    bubble.shown = true;
     wrap.append(b);
   }
   return wrap;
@@ -717,6 +717,16 @@ function pruneBubbles() {
   if (PP.bubbles) {
     for (const pid in PP.bubbles) {
       if (PP.bubbles[pid].until < now) delete PP.bubbles[pid];
+    }
+  }
+  // Action flashes use a wall-clock 'until' (Date.now); pop once then vanish.
+  const wnow = Date.now();
+  document.querySelectorAll(".action-flash").forEach((el) => {
+    if (+el.dataset.until < wnow) el.remove();
+  });
+  if (PP.flash) {
+    for (const pid in PP.flash) {
+      if (PP.flash[pid].until < wnow) delete PP.flash[pid];
     }
   }
 }

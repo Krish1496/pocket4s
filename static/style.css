@@ -366,19 +366,18 @@ body {
 /* Action flash bubble (CHECK / CALL 4 / FOLD ...) ----------------------- */
 .action-flash {
   position: absolute; top: -2px; left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -10px);
   background: #facc15; color: #1e293b;
   font-size: 12px; font-weight: 900; letter-spacing: 0.5px;
   border-radius: 6px; padding: 2px 9px; z-index: 5;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
-  animation: action-flash 1.4s ease-out forwards;
+  animation: action-flash 0.22s ease-out;   /* pop in ONCE, then stay put */
 }
+.action-flash.no-anim { animation: none; }   /* re-renders: no re-pop */
 @keyframes action-flash {
-  0% { opacity: 0; transform: translate(-50%, 6px) scale(0.85); }
-  18% { opacity: 1; transform: translate(-50%, -10px) scale(1.08); }
-  35% { transform: translate(-50%, -10px) scale(1); }
-  80% { opacity: 1; transform: translate(-50%, -10px); }
-  100% { opacity: 0; transform: translate(-50%, -16px); }
+  0% { opacity: 0; transform: translate(-50%, 5px) scale(0.82); }
+  65% { opacity: 1; transform: translate(-50%, -13px) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%, -10px) scale(1); }
 }
 
 /* Paused overlay banner ------------------------------------------------- */
@@ -556,6 +555,7 @@ body {
   z-index: 6; pointer-events: none;
   animation: bubble-pop 0.18s ease-out;
 }
+.chat-bubble.no-anim { animation: none; }   /* re-renders: no re-pop */
 .chat-bubble::after {
   content: ""; position: absolute; top: 100%; left: 50%;
   transform: translateX(-50%);
