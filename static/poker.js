@@ -360,14 +360,14 @@ function desktopSeat(v, n) {
     const slots = [
       [66, 99],      // 1 hero (bottom-right) -- fixed
       [34, 99],      // 2 bottom-left -- fixed
-      [15, 74.5],    // 3 = midpoint of 2 and 4
+      [4, 74.5],     // 3 pushed out (convex)
       [-4, 50],      // 4 left-mid -- fixed
-      [15, 25],      // 5 = midpoint of 4 and 6
+      [4, 25.5],     // 5 pushed out (convex)
       [34, 0],       // 6 top-left -- fixed
       [66, 0],       // 7 top-right -- fixed
-      [85, 25],      // 8 = midpoint of 7 and 9
+      [96, 25.5],    // 8 pushed out (convex)
       [104, 50],     // 9 right-mid -- fixed
-      [85, 74.5],    // 10 = midpoint of 9 and 1
+      [96, 74.5],    // 10 pushed out (convex)
     ];
     return slots[v];
   }
