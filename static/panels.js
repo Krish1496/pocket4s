@@ -469,8 +469,10 @@
         const b = bar.querySelector(sel);
         if (b && !b.disabled && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
       };
-      // C or K -> the combined Check/Call button; F -> Fold; R -> focus bet.
-      if (key === "c" || key === "k") fire('#btnCall');
+      // C -> Call (a quick MIN BET when everyone's checking); K -> Check;
+      // F -> Fold; R -> focus the bet amount.
+      if (key === "c") fire('#btnCall');
+      else if (key === "k") fire('#btnCheck');
       else if (key === "r") { e.preventDefault(); focusRaise(); }
       else if (key === "f") fire('#btnFold');
     });

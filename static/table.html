@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=74" />
+  <link rel="stylesheet" href="/static/style.css?v=75" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -193,10 +193,11 @@
               </div>
             </div>
           </div>
-          <!-- Main action triggers (Raise <-> Fold swapped per request) -->
+          <!-- Main action triggers: Bet/Raise | Call | Check | Fold -->
           <div class="triggers">
             <button class="btn raise" id="btnRaise" data-act="raise">Bet / Raise<span class="sub" id="raiseSub"></span></button>
-            <button class="btn call" id="btnCall" data-act="call">Check / Call<span class="sub" id="callSub"></span></button>
+            <button class="btn call" id="btnCall" data-act="call">Call<span class="sub" id="callSub"></span></button>
+            <button class="btn check" id="btnCheck" data-act="check">Check</button>
             <button class="btn fold" id="btnFold" data-act="fold">Fold</button>
           </div>
         </div>
@@ -247,10 +248,10 @@
 
   <!-- (Voice toggle moved into the bottom-left dock; mic on each pod shows who's talking.) -->
 
-  <script src="/static/sfx.js?v=74"></script>
-  <script src="/static/fx.js?v=74"></script>
-  <script src="/static/poker.js?v=74"></script>
-  <script src="/static/panels.js?v=74"></script>
-  <script src="/static/voice.js?v=74"></script>
+  <script src="/static/sfx.js?v=75"></script>
+  <script src="/static/fx.js?v=75"></script>
+  <script src="/static/poker.js?v=75"></script>
+  <script src="/static/panels.js?v=75"></script>
+  <script src="/static/voice.js?v=75"></script>
 </body>
 </html>

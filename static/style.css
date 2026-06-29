@@ -1059,19 +1059,22 @@ header.border-b { border-color: var(--line-soft) !important; }
 /* Main triggers (right) */
 .actionbar .triggers { display: flex; gap: 10px; flex: 0 0 auto; }
 .actionbar .triggers .btn {
-  border: 1px solid; border-radius: 5px; padding: 12px 22px;
+  border: 1px solid; border-radius: 5px; padding: 12px 16px;
   font-size: 13px; font-weight: 700; letter-spacing: 0.4px;
-  background: transparent; text-transform: uppercase; min-width: 116px;
+  background: transparent; text-transform: uppercase; min-width: 92px;
 }
 .actionbar .btn.fold  { color: var(--accent-fold);  border-color: var(--accent-fold); }
 .actionbar .btn.call  { color: var(--accent-call);  border-color: var(--accent-call); }
+.actionbar .btn.check { color: var(--txt-dim);       border-color: var(--line); }
 .actionbar .btn.raise { color: #16191c; background: var(--accent-bet); border-color: var(--accent-bet); }
 .actionbar .btn.fold:hover:not(:disabled)  { background: rgba(179,84,84,0.14); }
 .actionbar .btn.call:hover:not(:disabled)  { background: rgba(79,140,255,0.14); }
+.actionbar .btn.check:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: var(--txt); }
 .actionbar .btn.raise:hover:not(:disabled) { filter: brightness(1.06); }
 .actionbar .btn.fold.pressed  { background: var(--accent-fold); color: #fff; }
 .actionbar .btn.call.pressed  { background: var(--accent-call); color: #08142b; }
-.actionbar .btn.raise.pressed { filter: brightness(0.9); }
+.actionbar .btn.check.pressed { background: var(--txt-faint); color: #fff; }
+
 .actionbar .btn:disabled { opacity: 0.35; cursor: default; }
 .actionbar .btn .sub { display: block; font-size: 10px; font-weight: 500; opacity: 0.75; letter-spacing: 0; }
 
@@ -1107,3 +1110,4 @@ body.bar-open main { padding-bottom: 130px; }
 .actionbar .btn.ghost:hover:not(:disabled) { opacity: 0.65; }
 .actionbar .btn.fold.armed  { background: var(--accent-fold);  color: #fff;     opacity: 1; }
 .actionbar .btn.call.armed  { background: var(--accent-call);  color: #08142b;  opacity: 1; }
+.actionbar .btn.check.armed { background: var(--txt-faint);    color: #fff;     opacity: 1; }

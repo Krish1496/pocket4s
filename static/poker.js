@@ -576,46 +576,55 @@ function renderActionBar() {
   $("optCheckFold").checked = you.auto_check_fold || pm === "checkfold" || pm === "check";
   $("optCallAny").checked   = pm === "call";
 
-  const fold = $("btnFold"), call = $("btnCall"), raise = $("btnRaise");
+  const fold = $("btnFold"), call = $("btnCall"), check = $("btnCheck"), raise = $("btnRaise");
   const callSub = $("callSub"), raiseSub = $("raiseSub");
+  const all = [fold, call, check, raise];
 
   if (!myTurn) {
-    // Not my turn: the SAME trigger buttons, GHOSTED -> click to arm a
-    // premove. The armed one lights up solid (no separate premove bar).
+    // Not my turn: the SAME four triggers, GHOSTED -> click to arm a premove.
     PP.raiseBounds = null;
-    const callMove = facing ? "call" : "check";
-    fold.disabled = false; call.disabled = false; raise.disabled = true;  // no pre-raise
-    fold.dataset.pm = "fold"; call.dataset.pm = callMove;
-    setLabel(call, facing ? "Call" : "Check");
-    callSub.textContent = facing ? `call ${callAmt}` : "";
+    all.forEach((b) => { b.classList.remove("pressed"); delete b.dataset.pm; });
+    setLabel(call, "Call");   callSub.textContent = facing ? `call ${callAmt}` : "";
+    setLabel(check, facing ? "Check / Fold" : "Check");
     setLabel(raise, "Bet / Raise"); raiseSub.textContent = "";
-    const armedCall = pm === callMove || (callMove === "check" && pm === "checkfold");
-    [fold, call, raise].forEach((b) => b.classList.remove("pressed"));
-    fold.classList.toggle("armed", pm === "fold");
-    call.classList.toggle("armed", armedCall);
-    raise.classList.remove("armed");
-    // ghost any button that ISN'T the armed one
-    fold.classList.toggle("ghost", pm !== "fold");
-    call.classList.toggle("ghost", !armedCall);
-    raise.classList.add("ghost");
+    fold.dataset.pm = "fold";
+    if (facing) call.dataset.pm = "call";
+    check.dataset.pm = facing ? "checkfold" : "check";
+    fold.disabled = false; call.disabled = !facing; check.disabled = false; raise.disabled = true;
+    all.forEach((b) => {
+      const armed = b.dataset.pm != null && b.dataset.pm === pm;
+      b.classList.toggle("armed", armed);
+      b.classList.toggle("ghost", !armed);
+    });
     setSizingDisabled(true);
     updateTimer();
     return;
   }
 
-  // My turn: clear any premove ghosting; triggers act immediately.
-  [fold, call, raise].forEach((b) => {
-    b.classList.remove("ghost", "armed", "pressed"); delete b.dataset.pm;
-  });
+  // My turn: clear premove ghosting; triggers act immediately.
+  all.forEach((b) => { b.classList.remove("ghost", "armed", "pressed"); delete b.dataset.pm; });
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
   setSizingDisabled(!canRaise);
+  fold.disabled = false;
 
-  if (you.can_check) { setLabel(call, "Check"); callSub.textContent = ""; }
-  else { setLabel(call, "Call"); callSub.textContent = you.to_call > 0 ? `call ${you.to_call}` : ""; }
-  call.disabled = false;
+  // CHECK: only legal when there's nothing to call.
+  setLabel(check, "Check"); check.disabled = !you.can_check;
+
+  // CALL: facing a bet -> Call N; everyone checking -> a one-tap MIN BET.
+  delete call.dataset.betmin;
+  if (you.to_call > 0) {
+    setLabel(call, "Call"); callSub.textContent = `call ${you.to_call}`;
+    call.disabled = false;
+  } else {
+    setLabel(call, "Bet"); callSub.textContent = canRaise ? `${minTo}` : "";
+    call.disabled = !canRaise;
+    if (canRaise) call.dataset.betmin = String(minTo);
+  }
+
+  // BET / RAISE: uses the slider/input amount.
   setLabel(raise, you.to_call === 0 ? "Bet" : "Raise");
   raise.disabled = !canRaise;
 
@@ -829,11 +838,20 @@ function wireCore() {
     $("btnFold").classList.add("pressed"); doFold();
   };
   $("btnCall").onclick = () => {
-    if ($("btnCall").disabled) return;
-    if (premoveMode()) { armPremove($("btnCall")); return; }
-    $("btnCall").classList.add("pressed");
-    const act = PP.state.you.can_check ? "check" : "call";
-    send({ type: "action", action: act });
+    const b = $("btnCall");
+    if (b.disabled) return;
+    if (premoveMode()) { armPremove(b); return; }
+    b.classList.add("pressed");
+    // Everyone checking -> Call doubles as a quick MIN BET (PokerNow).
+    if (b.dataset.betmin) { send({ type: "action", action: "raise", amount: +b.dataset.betmin }); return; }
+    send({ type: "action", action: "call" });
+  };
+  $("btnCheck").onclick = () => {
+    const b = $("btnCheck");
+    if (b.disabled) return;
+    if (premoveMode()) { armPremove(b); return; }
+    b.classList.add("pressed");
+    send({ type: "action", action: "check" });
   };
   $("btnRaise").onclick = () => {
     if ($("btnRaise").disabled) return;       // disabled while pre-acting
