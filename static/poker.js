@@ -202,8 +202,9 @@ function computeAnims(s) {
   const a = { boardFrom: s.board.length, dealHoles: false,
               flipReveal: false, potBump: false, winners: {} };
   const newHand = s.hand_no !== PP.prevHandNo;
-  if (newHand) { PP.prevBoardLen = 0; PP.prevRunsDone = 0; PP.shownCells = new Set(); }
+  if (newHand) { PP.prevBoardLen = 0; PP.prevRunsDone = 0; PP.prevRabbitLen = 0; PP.shownCells = new Set(); }
   a.boardFrom = PP.prevBoardLen || 0;
+  a.rabbitFrom = PP.prevRabbitLen || 0;   // flip in only the freshly-revealed rabbit cards
   // Run-it-twice: when a NEW run starts, only flip the fresh street(s) for
   // that run -- the shared flop/turn revealed before the all-in stays put
   // and must NOT re-flip. (Detect the new run by the completed-runs count,
@@ -232,6 +233,7 @@ function computeAnims(s) {
   }
   PP.prevBoardLen = s.board.length;
   PP.prevRunsDone = runsDone;
+  PP.prevRabbitLen = (s.rabbit || []).length;
   if (window.detectFlashes) window.detectFlashes(s);
   PP.prevHandNo = s.hand_no;
   PP.prevPhase = s.phase;
@@ -263,7 +265,16 @@ function renderBoard() {
           board.append(cardEl(s.board[i]));
         }
       } else if (rabbit[i - baseLen]) {
-        const rc = cardEl(rabbit[i - baseLen]);
+        const ri = i - baseLen;
+        let rc;
+        if (ri >= (PP.anim.rabbitFrom || 0)) {
+          // Freshly revealed -> flip it in like a real street.
+          const step = ri - (PP.anim.rabbitFrom || 0);
+          rc = flipCardEl(rabbit[ri], false, 0.12 + step * 0.13);
+          if (window.PPSFX) setTimeout(() => PPSFX.play("deal"), 120 + step * 130);
+        } else {
+          rc = cardEl(rabbit[ri]);
+        }
         rc.classList.add("rabbit-card");        // dimmed -> "would have been"
         board.append(rc);
       } else {
