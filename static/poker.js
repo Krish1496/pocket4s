@@ -835,11 +835,20 @@ function renderResult() {
 
 function wireCore() {
   $("joinBtn").onclick = () => {
-    PP.name = ($("nameInput").value.trim() || "Player").slice(0, 20);
+    const name = ($("nameInput").value || "").trim();
+    if (!name) {                       // a name is required to enter
+      const inp = $("nameInput");
+      inp.classList.add("input-error");
+      inp.focus();
+      toast("Please enter a name to join.");
+      return;
+    }
+    PP.name = name.slice(0, 20);
     localStorage.setItem(nameKey, PP.name);
     $("nameModal").classList.add("hidden");
     connect();
   };
+  $("nameInput").addEventListener("input", () => $("nameInput").classList.remove("input-error"));
   $("nameInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") $("joinBtn").click();
   });

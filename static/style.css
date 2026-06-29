@@ -1156,3 +1156,9 @@ body.bar-open main { padding-bottom: 130px; }
 /* Rabbit-hunt cards shown IN the board row (the would-be runout), dimmed so
    they read as "what would have come" rather than real community cards. */
 #board .rabbit-card { opacity: 0.5; }
+
+/* Name field validation: red ring when you try to join without a name. */
+.input-error, .input-error:focus {
+  border-color: var(--accent-fold) !important;
+  box-shadow: 0 0 0 2px rgba(179, 84, 84, 0.35) !important;
+}
