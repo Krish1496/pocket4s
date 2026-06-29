@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=75" />
+  <link rel="stylesheet" href="/static/style.css?v=76" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -156,6 +156,7 @@
           <div id="phaseLabel" class="mt-2 text-xs uppercase tracking-widest text-slate-300"></div>
           <div id="rabbitHint" class="mt-1 text-xs text-amber-300 hidden">&#x1F407; Click the cards or press H to rabbit-hunt</div>
           <div id="resultBanner" class="mt-2 text-sm font-bold text-emerald-300"></div>
+          <button id="nextBtn" class="felt-next hidden">Next hand</button>
         </div>
       </div>
 
@@ -203,16 +204,19 @@
         </div>
       </div>
 
+      <!-- Show-your-cards panel (showdown). Sits where the action triggers are:
+           Both on top, Card 1 / Card 2 side-by-side below. -->
+      <div id="showCardsBar" class="show-cards hidden">
+        <button id="showBothBtn" class="btn show-both" title="Show both cards (key 3)">Show both</button>
+        <div class="show-row">
+          <button id="show1Btn" class="btn" title="Show your 1st card (key 1)">Card 1</button>
+          <button id="show2Btn" class="btn" title="Show your 2nd card (key 2)">Card 2</button>
+        </div>
+      </div>
+
       <!-- Host / self controls -->
       <div id="controlBar" class="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button id="startBtn" class="btn-primary hidden">Start hand</button>
-        <button id="nextBtn" class="btn-primary hidden">Next hand</button>
-        <span id="showCardsBar" class="hidden inline-flex items-center gap-1">
-          <span class="text-slate-400 text-xs">Show:</span>
-          <button id="show1Btn" class="btn-muted" title="Show your 1st card (key 1)">Card 1</button>
-          <button id="show2Btn" class="btn-muted" title="Show your 2nd card (key 2)">Card 2</button>
-          <button id="showBothBtn" class="btn-muted" title="Show both cards (key 3)">Both</button>
-        </span>
         <p id="waitMsg" class="text-slate-400 text-sm w-full text-center"></p>
       </div>
     </section>
@@ -248,10 +252,10 @@
 
   <!-- (Voice toggle moved into the bottom-left dock; mic on each pod shows who's talking.) -->
 
-  <script src="/static/sfx.js?v=75"></script>
-  <script src="/static/fx.js?v=75"></script>
-  <script src="/static/poker.js?v=75"></script>
-  <script src="/static/panels.js?v=75"></script>
-  <script src="/static/voice.js?v=75"></script>
+  <script src="/static/sfx.js?v=76"></script>
+  <script src="/static/fx.js?v=76"></script>
+  <script src="/static/poker.js?v=76"></script>
+  <script src="/static/panels.js?v=76"></script>
+  <script src="/static/voice.js?v=76"></script>
 </body>
 </html>

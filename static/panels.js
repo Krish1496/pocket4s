@@ -11,7 +11,8 @@
     const isBetting = ["preflop", "flop", "turn", "river"].includes(s.phase);
     const owner = s.you.is_owner;
     show($("startBtn"), owner && s.phase === "waiting");
-    show($("nextBtn"), owner && s.phase === "showdown");
+    // Next hand lives on the felt (below the board) and only when auto-deal is OFF.
+    show($("nextBtn"), owner && s.phase === "showdown" && !s.settings.auto_deal);
     renderShowCards(s);
     const pause = $("pauseBtn");
     show(pause, owner);

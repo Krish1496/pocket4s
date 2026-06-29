@@ -78,7 +78,10 @@ def _auto_move_for(game, p) -> str | None:
         return None
     p.premove = None                          # one-shot
     if pm == "fold":
-        return "fold"                         # pre-fold: give it up when it's on you
+        # Never fold for FREE: if nobody bet, check instead. Mirrors the manual
+        # "you can check for free -- fold anyway?" guard (which can't pop on an
+        # auto-executed premove). Folding a checkable hand is strictly a loss.
+        return "fold" if to_call > 0 else "check"
     if pm == "check":
         return "check" if to_call <= 0 else None   # cancelled: a bet came in
     if pm == "call":

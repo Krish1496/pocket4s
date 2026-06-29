@@ -327,6 +327,25 @@ def test_premove_call_fires_on_your_turn():
     assert g.to_act != actor                        # turn moved on
 
 
+def test_premove_fold_checks_for_free_when_unbet():
+    """A pre-armed FOLD must NOT surrender a hand you could check for free:
+    when nobody has bet (to_call == 0) it auto-checks instead of folding."""
+    g = make_table(action_timeout=0)
+    _seat_two(g)
+    g.start_hand()
+    # advance to the flop so the first actor faces no bet (to_call == 0).
+    g.act(g.to_act, "call")        # SB completes
+    g.act(g.to_act, "check")       # BB checks -> flop (paced)
+    g.reveal_next_street()         # flush the 1s beat -> flop is live
+    assert g.phase.value == "flop"
+    actor = g.to_act
+    assert g.current_bet - g.get(actor).round_bet == 0   # free to check
+    g.set_premove(actor, "fold")
+    g.auto_advance()
+    assert g.get(actor).in_hand               # still in the hand (checked, not folded)
+    assert g.to_act != actor                  # turn moved on
+
+
 def test_bad_premove_is_rejected():
     g = make_table()
     _seat_two(g)
