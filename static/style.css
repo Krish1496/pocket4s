@@ -928,16 +928,17 @@ body {
 
 /* Bet value: small boxed tag pushed toward center (prototype look). */
 .seat .bet-chip {
-  background: var(--chip);
-  color: var(--txt);
-  border: 1px solid var(--line-soft);
-  border-radius: 3px;
-  box-shadow: none;
-  font-weight: 600;
-  font-size: 11px;
-  padding: 1px 6px;
+  background: var(--accent-bet);
+  color: #16191c;
+  border: 1px solid var(--accent-bet);
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  font-weight: 800;
+  font-size: 12px;
+  padding: 2px 9px;
   text-shadow: none;
   animation: none;
+  z-index: 4;
 }
 
 /* Seat avatar: initial badge circle next to the pod (prototype look). */

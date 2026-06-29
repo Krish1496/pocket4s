@@ -533,7 +533,7 @@ function seatEl(p, xPct, yPct) {
     const felt = $("felt");
     const fw = felt.clientWidth || 900, fh = felt.clientHeight || 430;
     const ang = Math.atan2(50 - yPct, 50 - xPct);
-    const dx = Math.cos(ang) * fw * 0.13, dy = Math.sin(ang) * fh * 0.24;
+    const dx = Math.cos(ang) * fw * 0.085, dy = Math.sin(ang) * fh * 0.17;
     bet.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
     wrap.append(bet);
   }
