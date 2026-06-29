@@ -507,7 +507,7 @@ function seatEl(p, xPct, yPct) {
   if (p.round_bet > 0) {
     const bet = document.createElement("div");
     bet.className = "bet-chip";
-    bet.textContent = p.round_bet;
+    bet.textContent = "Bet: " + p.round_bet;
     // Push the chip from the pod TOWARD the table center (where the pot sits).
     const ang = Math.atan2(50 - yPct, 50 - xPct);
     const dx = Math.cos(ang) * 78, dy = Math.sin(ang) * 60;

@@ -1,25 +1,29 @@
 :root {
-  /* Flat minimalist theme (dark, 2D, vector outline). */
-  --bg: #121416;
-  --bg-2: #1a1d20;
-  --line: #3a3f45;          /* thin vector table outline */
+  /* Flat minimalist theme (dark, 2D, flat green felt). */
+  --bg: #1a1d20;
+  --bg-2: #14171a;
+  --felt: #1b834b;          /* flat untextured green */
+  --felt-rim: #0c0e10;
+  --line: #3a3f45;
   --line-soft: #2a2e33;
-  --pod: #1e2227;           /* flat seat badge */
-  --pod-line: #353a40;
-  --pod-active: #1e2227;
-  --chip: #23272c;          /* flat bet tag bg */
-  --dealer: #e6e8ea;
-  --pot-pill: #23272c;
+  --pod: #111315;           /* solid black-slate seat box */
+  --pod-line: #2b3035;
+  --pod-active: #111315;
+  --chip: #23272c;
+  --dealer: #ffffff;
+  --pot-pill: rgba(0, 0, 0, 0.4);
   --txt: #e6e8ea;
   --txt-dim: #9aa0a6;
   --txt-faint: #6b7178;
+  --card-red: #dc3545;
+  --card-black: #000000;
   --accent-bet: #e3b341;
   --accent-call: #4f8cff;
   --accent-fold: #b35454;
   --card-w: 66px;
 }
 
-/* Flat matte charcoal room -- no gradient. */
+/* Flat matte charcoal canvas -- no gradient. */
 body {
   background: var(--bg);
 }
@@ -53,11 +57,11 @@ body {
   font-weight: 700;
 }
 .card .suit { font-size: calc(var(--card-w) * 0.50); margin-top: calc(var(--card-w) * -0.04); }
-.card.red { color: #e0282d; }
-.card.black { color: #111; }
+.card.red { color: var(--card-red); }
+.card.black { color: var(--card-black); }
 .card.back {
-  background: #2b3038;            /* flat solid back, no pattern */
-  border: 1px solid #3a4049;
+  background: #e88f8f;            /* flat salmon-pink back */
+  border: 1px solid #ffffff;
 }
 .card.small { --card-w: 46px; }   /* height + fonts follow automatically */
 .card.placeholder {
@@ -66,19 +70,16 @@ body {
   box-shadow: none;
 }
 
-/* Felt table ------------------------------------------------------------
-   PokerNow desktop look: NOT a solid block -- a thin vector-style oval
-   OUTLINE on the dark room background. (Phones override to a tall rounded
-   rectangle further down -- see the portrait media query.) */
+/* Felt table -- flat untextured green oval with a thin charcoal rim. */
 .felt {
   width: min(1180px, 76vw);
   aspect-ratio: 1.95 / 1;
   max-height: 64vh;
   margin: 0 auto;
-  background: transparent;
-  border: 1.5px solid var(--line, #3a3f45);
-  border-radius: 50%;                 /* full ellipse on desktop */
-  box-shadow: none;
+  background: var(--felt);
+  border: 1px solid var(--felt-rim);
+  border-radius: 50%;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
   position: relative;
 }
 
@@ -878,32 +879,38 @@ body {
 
 .felt::before { content: none; }   /* outline only, no fill/sheen */
 
-/* Active player: a plain blue outline -- no glow, no animation. */
+/* Active player: razor-sharp WHITE outline + a green tick line at the bottom. */
 .seat.turn .pod {
   background: var(--pod);
-  border-color: var(--accent-call) !important;
-  box-shadow: none !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px #ffffff !important;
 }
 .seat.turn .name, .seat.turn .stack { color: var(--txt) !important; }
+.pod-timer { background: rgba(255, 255, 255, 0.12); }
+.pod-timer-fill { background: #2bd66a !important; }   /* bright green tick */
 
-/* Pot tag: flat container, no pulse/sheen. */
+/* Pot capsule: semi-transparent black pill, bold white. */
 .pot-label {
   background: var(--pot-pill);
   background-image: none;
-  border: 1px solid var(--line-soft);
+  border: none;
   box-shadow: none;
-  font-weight: 700;
+  font-weight: 800;
+  color: #ffffff;
 }
 .pot-label.bump { animation: none; }
 
-/* Bet tag: flat text chip, pushed toward center (positioned in JS). */
+/* Bet value: standalone WHITE text, no box (positioned toward center in JS). */
 .seat .bet-chip {
-  background: var(--chip);
-  color: var(--txt);
-  border: 1px solid var(--line-soft);
-  border-radius: 3px;
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  border-radius: 0;
   box-shadow: none;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   animation: none;
 }
 
@@ -928,4 +935,3 @@ body {
   font-weight: 800;
   box-shadow: none;
 }
-
