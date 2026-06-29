@@ -271,9 +271,6 @@ function renderBoard() {
       }
     }
   }
-  // Rabbit cards now live in the board row above; keep this legacy row empty.
-  const rabbit = $("rabbitRow");
-  if (rabbit) rabbit.innerHTML = "";
 }
 
 // Run-it-twice layout: the shared flop stays on one row; each run's NEW
