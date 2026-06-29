@@ -1162,3 +1162,30 @@ body.bar-open main { padding-bottom: 130px; }
   border-color: var(--accent-fold) !important;
   box-shadow: 0 0 0 2px rgba(179, 84, 84, 0.35) !important;
 }
+
+/* Host buy-in request popup (auto-shows top-right when players request). */
+.req-popup {
+  position: fixed; top: 58px; right: 16px; z-index: 48;
+  width: 280px; max-width: 80vw;
+  background: var(--bg-2); border: 1px solid var(--accent-bet);
+  border-radius: 8px; box-shadow: 0 12px 34px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.req-popup.hidden { display: none; }
+.req-popup-head {
+  padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+  color: var(--accent-bet); border-bottom: 1px solid var(--line-soft);
+  text-transform: uppercase;
+}
+.req-popup-list { display: flex; flex-direction: column; }
+.req-popup-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; border-bottom: 1px solid var(--line-soft);
+}
+.req-popup-row:last-child { border-bottom: none; }
+.req-popup-label { font-size: 12.5px; color: var(--txt); }
+.req-popup-btns { display: flex; gap: 6px; flex: 0 0 auto; }
+.req-popup-btns .req-ok  { background: var(--accent-call); color: #08142b; }
+.req-popup-btns .req-no  { background: var(--accent-fold); color: #fff; }
+.req-popup-btns button:hover { filter: brightness(1.08); }
+@media (max-width: 760px) { .req-popup { top: auto; bottom: 12px; right: 10px; } }

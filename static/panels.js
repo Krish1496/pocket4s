@@ -112,6 +112,58 @@
     });
   }
 
+  // ---- re-buy prompt: auto-asks a busted player to buy in again -------
+  // Fires once the hand has reset and you're sitting out with 0 chips (so it
+  // never pops mid-runout). Resolves when you buy in (-> request) or stand up.
+  function renderRebuy(s) {
+    const you = s.you;
+    const me = s.players.find((p) => p.id === PP.pid);
+    // Hand is over (showdown settled, or waiting) and you have no chips left.
+    // Guard against mid-runout so it never pops while cards are still coming.
+    const handOver = (s.phase === "showdown" || s.phase === "waiting") && !s.running_out;
+    const busted = !!(me && you.seated && me.stack === 0 && !me.pending_topup && handOver);
+    const hasReq = (s.requests || []).some((r) => r.id === PP.pid);
+    const wantAsk = busted && !hasReq;
+    const modal = $("rebuyModal");
+    const open = !modal.classList.contains("hidden");
+    if (wantAsk && !open) {
+      const def = s.settings.default_buyin, min = s.settings.min_buyin, max = s.settings.max_buyin;
+      $("rebuyHint").textContent = you.is_owner
+        ? `Buy in ${min}-${max} to keep playing, or stand up.`
+        : `Buy in ${min}-${max} (host approves), or stand up to leave.`;
+      const a = $("rebuyAmount"), sl = $("rebuySlider");
+      sl.min = min; sl.max = max; sl.value = def; a.value = def;
+      show(modal, true);
+    } else if (!wantAsk && open) {
+      show(modal, false);   // got chips / left / request pending -> close it
+    }
+  }
+
+  // ---- host buy-in request POPUP (auto-shows on new requests) ---------
+  function renderReqPopup(s) {
+    const pop = $("reqPopup"), list = $("reqPopupList");
+    const on = s.you.is_owner && (s.requests || []).length > 0;
+    show(pop, on);
+    if (!on) { list.innerHTML = ""; return; }
+    list.innerHTML = "";
+    s.requests.forEach((r) => {
+      const row = document.createElement("div");
+      row.className = "req-popup-row";
+      const label = r.kind === "sit"
+        ? `${PP.escapeHtml(r.name)} \u2192 seat ${r.seat + 1}, ${r.amount}`
+        : `${PP.escapeHtml(r.name)} top-up ${r.amount}`;
+      const txt = document.createElement("span");
+      txt.className = "req-popup-label"; txt.textContent = label;
+      const btns = document.createElement("div");
+      btns.className = "req-popup-btns";
+      btns.append(
+        mkBtn("Approve", "req-ok", () => PP.send({ type: "approve", target: r.id })),
+        mkBtn("Deny", "req-no", () => PP.send({ type: "deny", target: r.id })));
+      row.append(txt, btns);
+      list.append(row);
+    });
+  }
+
   // ---- tabs: hand log / chat / ledger ---------------------------------
   function renderTabs(s) {
     $("tabHand").innerHTML = "";
@@ -340,6 +392,18 @@
       show($("topupModal"), false);
     };
 
+    // Re-buy (busted) modal: slider<->input sync; buy in (topup) or stand up.
+    $("rebuySlider").oninput = () => { $("rebuyAmount").value = $("rebuySlider").value; };
+    $("rebuyAmount").oninput = () => { $("rebuySlider").value = $("rebuyAmount").value; };
+    $("rebuyConfirm").onclick = () => {
+      PP.send({ type: "topup", amount: +$("rebuyAmount").value });
+      show($("rebuyModal"), false);   // re-opens later only if the host denies
+    };
+    $("rebuyDecline").onclick = () => {
+      show($("rebuyModal"), false);
+      if (confirm("Stand up and leave the table?")) PP.send({ type: "stand_up" });
+    };
+
     $("sitCancel").onclick = () => show($("sitModal"), false);
     $("sitSlider").oninput = () => { $("sitAmount").value = $("sitSlider").value; };
     $("sitAmount").oninput = () => { $("sitSlider").value = $("sitAmount").value; };
@@ -514,6 +578,8 @@
     renderControls(s);
     renderPremove(s);
     renderRequests(s);
+    renderReqPopup(s);
+    renderRebuy(s);
     renderTabs(s);
   };
 

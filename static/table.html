@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=82" />
+  <link rel="stylesheet" href="/static/style.css?v=83" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -49,6 +49,21 @@
       <div class="flex gap-2">
         <button id="topupCancel" class="btn-muted flex-1">Cancel</button>
         <button id="topupConfirm" class="btn-primary flex-1">Request top-up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Re-buy modal: auto-opens when you bust out (stack = 0). -->
+  <div id="rebuyModal" class="modal-wrap hidden">
+    <div class="modal-card">
+      <h2 class="text-xl font-bold mb-1">You're out of chips</h2>
+      <p id="rebuyHint" class="text-slate-400 text-sm mb-4"></p>
+      <label for="rebuyAmount" class="block text-sm font-medium text-slate-300 mb-1">Buy-in amount</label>
+      <input id="rebuyAmount" type="number" class="inp mb-2" />
+      <input id="rebuySlider" type="range" class="w-full mb-4" />
+      <div class="flex gap-2">
+        <button id="rebuyDecline" class="btn-muted flex-1">Stand up</button>
+        <button id="rebuyConfirm" class="btn-primary flex-1">Buy in</button>
       </div>
     </div>
   </div>
@@ -249,12 +264,18 @@
 
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg hidden"></div>
 
+  <!-- Host buy-in request popup (auto-shows when players request to buy in) -->
+  <div id="reqPopup" class="req-popup hidden">
+    <div class="req-popup-head">Buy-in requests</div>
+    <div id="reqPopupList" class="req-popup-list"></div>
+  </div>
+
   <!-- (Voice toggle moved into the bottom-left dock; mic on each pod shows who's talking.) -->
 
-  <script src="/static/sfx.js?v=82"></script>
-  <script src="/static/fx.js?v=82"></script>
-  <script src="/static/poker.js?v=82"></script>
-  <script src="/static/panels.js?v=82"></script>
-  <script src="/static/voice.js?v=82"></script>
+  <script src="/static/sfx.js?v=83"></script>
+  <script src="/static/fx.js?v=83"></script>
+  <script src="/static/poker.js?v=83"></script>
+  <script src="/static/panels.js?v=83"></script>
+  <script src="/static/voice.js?v=83"></script>
 </body>
 </html>
