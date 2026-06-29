@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poker Now — Clone Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============ 1. GLOBAL THEME & PALETTE ============ */
+  :root {
+    --bg:         #121416;   /* deep matte charcoal */
+    --bg-2:       #1a1d20;   /* navbar / panels     */
+    --line:       #3a3f45;   /* thin table outline  */
+    --line-soft:  #262a2f;
+    --txt:        #e6e8ea;
+    --txt-dim:    #9aa0a6;
+    --txt-faint:  #6b7178;
+    --card:       #f7f8f8;
+    --card-red:   #d83a3a;
+    --card-black: #16191c;
+    --card-back:  #2b3138;
+    --accent-bet:  #e3b341;   /* BET / RAISE */
+    --accent-call: #4f8cff;   /* CHECK / CALL */
+    --accent-fold: #b35454;   /* FOLD */
+    --pod-bg:     #1c2025;
+    --pod-line:   #333941;
+    --pod-active: #4f8cff;
+    --tag-bg:     #23272c;
+    --win:        #5fb27a;
+    --font: "Inter", Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: var(--font);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  button, input { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  /* ============ 6. TOP NAVBAR ============ */
+  .navbar {
+    height: 46px; flex: 0 0 46px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg-2);
+    z-index: 20;
+  }
+  .nav-left  { display: flex; align-items: center; gap: 18px; }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .nav-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--txt); text-transform: uppercase;
+  }
+  .nav-tag { font-size: 12px; color: var(--txt-dim); letter-spacing: 0.2px; }
+  .nav-tag b { color: var(--txt); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .nav-clock {
+    font-variant-numeric: tabular-nums; font-size: 12px; color: var(--txt);
+    border: 1px solid var(--line); border-radius: 3px; padding: 3px 9px;
+  }
+  .icon-btn {
+    width: 32px; height: 32px; display: grid; place-items: center;
+    border: 1px solid var(--line-soft); background: transparent;
+    border-radius: 4px; color: var(--txt-dim);
+  }
+  .icon-btn:hover { color: var(--txt); border-color: var(--line); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ============ TABLE STAGE ============ */
+  .stage {
+    flex: 1 1 auto; position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+  /* the constrained oval area that owns the seats */
+  .felt {
+    position: relative;
+    width: min(86vw, 1040px);
+    aspect-ratio: 16 / 9;
+    max-height: 78%;
+  }
+  /* 2. CENTRAL TABLE — thin light-gray racetrack (stadium) outline, no fill */
+  /* flat top & bottom rails + full semicircle caps left & right */
+  .oval {
+    position: absolute; inset: 12% 10%;
+    border: 1.5px solid var(--line);
+    border-radius: 9999px;
+  }
+  .oval::after {  /* faint inner rail line, still flat */
+    content: ""; position: absolute; inset: 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: 9999px;
+  }
+
+  /* POT + community cards stacked at dead center */
+  .center-col {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    width: max-content;
+  }
+  .pot-tag {
+    font-size: 12px; font-weight: 600; color: var(--txt);
+    background: var(--tag-bg); border: 1px solid var(--line);
+    padding: 4px 12px; border-radius: 4px;
+    letter-spacing: 0.3px; font-variant-numeric: tabular-nums;
+  }
+  .pot-tag span { color: var(--txt-dim); font-weight: 500; }
+
+  /* community cards row */
+  .board { display: flex; gap: 7px; }
+
+  /* ============ FLAT 2D CARD ============ */
+  .card {
+    width: 46px; height: 64px; border-radius: 3px;
+    background: var(--card); color: var(--card-black);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 4px 5px; line-height: 1;
+    box-shadow: none; user-select: none;
+  }
+  .card.red   { color: var(--card-red); }
+  .card .r    { font-size: 15px; font-weight: 700; }
+  .card .s    { font-size: 15px; align-self: flex-end; }
+  .card.back  {
+    background: var(--card-back);
+    border: 1px solid #3a424b;
+  }
+  .card.placeholder {
+    background: transparent; border: 1px dashed var(--line-soft);
+  }
+
+  /* ============ 3. PLAYER SEATS (RADIAL) ============ */
+  .seat {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: 8px;
+    z-index: 5;
+  }
+  .avatar {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: #2a2f35; color: var(--txt);
+    font-size: 14px; font-weight: 600;
+    border: 1px solid var(--pod-line);
+  }
+  .pod {
+    background: var(--pod-bg); border: 1px solid var(--pod-line);
+    border-radius: 5px; padding: 5px 9px; min-width: 92px;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .pod .pname  { font-size: 12px; font-weight: 600; color: var(--txt); white-space: nowrap; }
+  .pod .pstack { font-size: 11px; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+
+  /* states */
+  .seat.active .pod    { border-color: var(--pod-active); }
+  .seat.active .avatar { border-color: var(--pod-active); color: #fff; }
+  .seat.folded         { opacity: 0.4; }
+  .seat.folded .pod    { background: #16191c; }
+
+  /* action clock tick under active seat */
+  .clock-bar {
+    position: absolute; left: 0; right: 0; bottom: -3px; height: 2px;
+    background: var(--pod-active);
+    transform-origin: left center; transform: scaleX(0.62);
+  }
+  .seat .pod { position: relative; overflow: hidden; }
+
+  /* dealer button */
+  .dealer {
+    position: absolute; width: 18px; height: 18px; border-radius: 50%;
+    background: #f7f8f8; color: #16191c;
+    font-size: 10px; font-weight: 700; display: grid; place-items: center;
+    z-index: 6;
+  }
+  /* bet tag pushed toward center */
+  .bet-tag {
+    position: absolute; transform: translate(-50%, -50%);
+    font-size: 11px; font-weight: 600; color: var(--txt);
+    background: var(--tag-bg); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 3px; white-space: nowrap;
+    font-variant-numeric: tabular-nums; z-index: 4;
+  }
+
+  /* ============ 5. LOG / CHAT PANEL ============ */
+  .log-panel {
+    position: absolute; left: 12px; bottom: 12px;
+    width: 290px; max-width: 38vw;
+    background: rgba(18,20,22,0.82);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--line-soft); border-radius: 6px;
+    display: flex; flex-direction: column; z-index: 15;
+  }
+  .log-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 11px; border-bottom: 1px solid var(--line-soft);
+  }
+  .log-tab {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.4px;
+    color: var(--txt-faint); text-transform: uppercase; background: none; border: none;
+  }
+  .log-tab.on { color: var(--txt); }
+  .log-body {
+    height: 168px; overflow-y: auto; padding: 8px 11px;
+    font-size: 11.5px; line-height: 1.55;
+    font-feature-settings: "tnum"; display: flex; flex-direction: column; gap: 2px;
+  }
+  .log-body::-webkit-scrollbar { width: 6px; }
+  .log-body::-webkit-scrollbar-thumb { background: #2c3137; border-radius: 3px; }
+  .log-line     { color: var(--txt-dim); }
+  .log-line b   { color: var(--txt); font-weight: 600; }
+  .log-line.win { color: var(--win); }
+  .log-line.sys { color: var(--txt-faint); }
+  .log-line .cards { color: var(--txt); }
+  .log-foot { display: flex; border-top: 1px solid var(--line-soft); }
+  .log-foot input {
+    flex: 1; background: transparent; border: none; outline: none;
+    padding: 8px 11px; font-size: 12px; color: var(--txt);
+  }
+  .log-foot input::placeholder { color: var(--txt-faint); }
+  .log-foot button {
+    background: none; border: none; border-left: 1px solid var(--line-soft);
+    padding: 0 13px; color: var(--accent-call); font-size: 12px; font-weight: 600;
+  }
+
+  /* ============ 4. BOTTOM ACTION BAR ============ */
+  .actionbar {
+    flex: 0 0 auto; background: var(--bg-2);
+    border-top: 1px solid var(--line-soft);
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 22px;
+    z-index: 20;
+  }
+  .hero-hand { display: flex; align-items: center; gap: 14px; }
+  .hero-cards { display: flex; gap: 6px; }
+  .hero-cards .card { width: 52px; height: 72px; }
+  .hero-meta { display: flex; flex-direction: column; gap: 2px; }
+  .hero-meta .hname  { font-size: 13px; font-weight: 600; }
+  .hero-meta .hstack { font-size: 12px; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+
+  .controls { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+  .opts { display: flex; gap: 18px; }
+  .opt {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--txt-dim); user-select: none; cursor: pointer;
+  }
+  .opt input { accent-color: var(--accent-call); width: 13px; height: 13px; }
+
+  .row { display: flex; align-items: center; gap: 12px; }
+
+  /* bet sizing */
+  .sizing { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .quick {
+    font-size: 11px; font-weight: 600; color: var(--txt-dim);
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px 9px; letter-spacing: 0.2px;
+  }
+  .quick:hover { color: var(--txt); border-color: var(--accent-call); }
+  .bet-input {
+    width: 92px; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px 9px; font-size: 13px; text-align: right;
+    font-variant-numeric: tabular-nums; outline: none;
+  }
+  .bet-input:focus { border-color: var(--accent-call); }
+
+  /* precise range slider */
+  .slider {
+    -webkit-appearance: none; appearance: none; flex: 1; height: 2px;
+    background: var(--line); border-radius: 2px; outline: none; min-width: 120px;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent-call); border: 2px solid var(--bg-2); cursor: pointer;
+  }
+  .slider::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent-call); border: 2px solid var(--bg-2); cursor: pointer;
+  }
+
+  /* main action triggers */
+  .triggers { display: flex; gap: 10px; }
+  .btn {
+    border: 1px solid; border-radius: 5px; padding: 12px 22px;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.4px;
+    background: transparent; text-transform: uppercase; min-width: 110px;
+  }
+  .btn.fold  { color: var(--accent-fold);  border-color: var(--accent-fold); }
+  .btn.call  { color: var(--accent-call);  border-color: var(--accent-call); }
+  .btn.raise { color: #16191c; background: var(--accent-bet); border-color: var(--accent-bet); }
+  .btn.fold:hover  { background: rgba(179,84,84,0.14); }
+  .btn.call:hover  { background: rgba(79,140,255,0.14); }
+  .btn.raise:hover { filter: brightness(1.06); }
+  .btn .sub { display: block; font-size: 10px; font-weight: 500; opacity: 0.7; letter-spacing: 0; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 760px) {
+    .felt { width: 94vw; max-height: 70%; }
+    .card { width: 36px; height: 50px; }
+    .card .r, .card .s { font-size: 12px; }
+    .pod { min-width: 72px; padding: 4px 7px; }
+    .avatar { width: 28px; height: 28px; flex-basis: 28px; font-size: 12px; }
+    .log-panel { display: none; }
+    .actionbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 10px 12px; }
+    .hero-hand { justify-content: center; }
+    .triggers .btn { flex: 1; min-width: 0; padding: 12px 8px; }
+    .nav-title { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== 6. TOP NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-title">Puppy&nbsp;Poker</span>
+      <span class="nav-tag">Blinds: <b>10 / 20</b></span>
+      <span class="nav-tag">Ante: <b>0</b></span>
+      <span class="nav-clock" id="navClock">00:42</span>
+    </div>
+    <div class="nav-right">
+      <button class="icon-btn" title="Ledger / Stats" aria-label="Ledger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6"/></svg>
+      </button>
+      <button class="icon-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8"/></svg>
+      </button>
+      <button class="icon-btn" title="Leave Game" aria-label="Leave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== TABLE STAGE ===== -->
+  <div class="stage">
+    <div class="felt" id="felt">
+      <div class="oval"></div>
+
+      <!-- POT + community cards -->
+      <div class="center-col">
+        <div class="pot-tag">POT <span>•</span> 1,240 <span>total</span></div>
+        <div class="board" id="board"></div>
+      </div>
+
+      <!-- seats / dealer / bet tags injected by JS -->
+    </div>
+
+    <!-- ===== 5. LOG / CHAT ===== -->
+    <div class="log-panel">
+      <div class="log-head">
+        <button class="log-tab on">Log</button>
+        <button class="log-tab">Chat</button>
+      </div>
+      <div class="log-body" id="logBody"></div>
+      <div class="log-foot">
+        <input type="text" placeholder="Type a message…" />
+        <button>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. BOTTOM ACTION BAR ===== -->
+  <div class="actionbar">
+    <div class="hero-hand">
+      <div class="hero-cards">
+        <div class="card red"><span class="r">A</span><span class="s">&hearts;</span></div>
+        <div class="card"><span class="r">K</span><span class="s">&spades;</span></div>
+      </div>
+      <div class="hero-meta">
+        <span class="hname">You</span>
+        <span class="hstack">2,000</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="opts">
+        <label class="opt"><input type="checkbox" /> Fold to any bet</label>
+        <label class="opt"><input type="checkbox" /> Check / Fold</label>
+        <label class="opt"><input type="checkbox" /> Call any</label>
+      </div>
+      <div class="row">
+        <div class="sizing">
+          <button class="quick" data-q="min">Min</button>
+          <button class="quick" data-q="2x">2x</button>
+          <button class="quick" data-q="3x">3x</button>
+          <button class="quick" data-q="pot">Pot</button>
+          <button class="quick" data-q="all">All-In</button>
+          <input type="range" class="slider" id="betSlider" min="20" max="2000" step="10" value="200" />
+          <input type="number" class="bet-input" id="betInput" value="200" min="20" max="2000" step="10" />
+        </div>
+      </div>
+    </div>
+
+    <div class="triggers">
+      <button class="btn fold">Fold</button>
+      <button class="btn call">Check / Call<span class="sub">call 80</span></button>
+      <button class="btn raise" id="raiseBtn">Bet / Raise<span class="sub" id="raiseSub">to 200</span></button>
+    </div>
+  </div>
+
+<script>
+  // ---- card render helper (DRY) ----
+  const SUIT = { s:"&spades;", h:"&hearts;", d:"&diams;", c:"&clubs;" };
+  function cardEl(code) {
+    if (code === "back")  return `<div class="card back"></div>`;
+    if (code === "empty") return `<div class="card placeholder"></div>`;
+    const r = code.slice(0, -1), s = code.slice(-1);
+    const red = (s === "h" || s === "d") ? " red" : "";
+    return `<div class="card${red}"><span class="r">${r}</span><span class="s">${SUIT[s]}</span></div>`;
+  }
+
+  // ---- community board ----
+  const board = ["As","Kh","2c","empty","empty"];
+  document.getElementById("board").innerHTML = board.map(cardEl).join("");
+
+  // ---- 10 players in radial geometry (ellipse param) ----
+  const players = [
+    { name:"You",      stack:2000, bet:0,   state:"" },
+    { name:"Aanya",    stack:1480, bet:80,  state:"active" },
+    { name:"Marco",    stack:920,  bet:0,   state:"folded" },
+    { name:"Priya",    stack:3120, bet:200, state:"" },
+    { name:"Devon",    stack:560,  bet:0,   state:"folded" },
+    { name:"Sora",     stack:2740, bet:0,   state:"" },
+    { name:"Lena",     stack:1100, bet:80,  state:"" },
+    { name:"Kofi",     stack:0,    bet:540, state:"" },
+    { name:"Mina",     stack:1890, bet:0,   state:"folded" },
+    { name:"Theo",     stack:2330, bet:0,   state:"" },
+  ];
+  const dealerIndex = 3;
+  const felt = document.getElementById("felt");
+  const N = players.length;
+
+  // ---- racetrack (stadium) geometry --------------------------------
+  // Work in aspect-correct units: felt is 16 wide x 9 tall, then -> %.
+  // Table inset matches CSS .oval { inset: 12% 10% }.
+  const FW = 16, FH = 9;
+  const cx = FW / 2, cy = FH / 2;                 // table center (8, 4.5)
+  const halfH = FH * (1 - 0.12 * 2) / 2;          // vertical half-extent
+  const R = halfH;                               // cap radius = half table height
+  const halfW = FW * (1 - 0.10 * 2) / 2;         // horizontal half-extent
+  const sh = halfW - R;                          // half-length of one flat rail
+  const top = cy - R, bot = cy + R;
+  const Lcap = Math.PI * R;                       // length of one semicircle
+  const P = 4 * sh + 2 * Lcap;                    // full perimeter
+
+  // point at arc-distance `d` along the track, pushed out by `grow` units
+  function trackPoint(frac, grow = 0) {
+    const r = R + grow, t = cy - r, b = cy + r, cap = Math.PI * r;
+    const per = 4 * sh + 2 * cap;
+    let d = ((frac % 1) + 1) % 1 * per;            // start at bottom-center
+    if (d < sh)            return { x: cx + d, y: b };                       // bottom-right rail
+    d -= sh;
+    if (d < cap) { const a = Math.PI/2 - (d/cap)*Math.PI;                    // right cap
+                   return { x: cx + sh + r*Math.cos(a), y: cy + r*Math.sin(a) }; }
+    d -= cap;
+    if (d < 2*sh)          return { x: cx + sh - d, y: t };                  // top rail (R->L)
+    d -= 2*sh;
+    if (d < cap) { const a = -Math.PI/2 - (d/cap)*Math.PI;                   // left cap
+                   return { x: cx - sh + r*Math.cos(a), y: cy + r*Math.sin(a) }; }
+    d -= cap;
+    return { x: cx - sh + d, y: b };                                         // bottom-left rail
+  }
+  const toPct = (p) => ({ x: p.x / FW * 100, y: p.y / FH * 100 });
+  // pull a boundary point toward table center by `amt` units (for tags/button)
+  function inward(p, amt) {
+    const dx = cx - p.x, dy = cy - p.y, m = Math.hypot(dx, dy) || 1;
+    return toPct({ x: p.x + dx/m*amt, y: p.y + dy/m*amt });
+  }
+
+  players.forEach((p, i) => {
+    const frac = i / N;                            // even spacing, seat 0 = bottom center
+    const seatPt = trackPoint(frac, 0.35);         // sit just outside the rail
+    const xy = toPct(seatPt);
+
+    // seat pod
+    const seat = document.createElement("div");
+    seat.className = "seat" + (p.state ? " " + p.state : "");
+    seat.style.left = xy.x + "%";
+    seat.style.top  = xy.y + "%";
+    const initial = p.name[0].toUpperCase();
+    const clock = p.state === "active" ? `<div class="clock-bar"></div>` : "";
+    seat.innerHTML = `
+      <div class="avatar">${initial}</div>
+      <div class="pod">
+        <span class="pname">${p.name}</span>
+        <span class="pstack">${p.stack === 0 ? "ALL-IN" : p.stack.toLocaleString()}</span>
+        ${clock}
+      </div>`;
+    felt.appendChild(seat);
+
+    // dealer button (just inside the rail near the seat)
+    if (i === dealerIndex) {
+      const dp = inward(trackPoint(frac, 0), 0.7);
+      const d = document.createElement("div");
+      d.className = "dealer"; d.textContent = "D";
+      d.style.left = dp.x + "%"; d.style.top = dp.y + "%";
+      d.style.transform = "translate(-50%,-50%)";
+      felt.appendChild(d);
+    }
+
+    // bet tag pushed inward toward the center line
+    if (p.bet > 0) {
+      const bp = inward(trackPoint(frac, 0), 1.3);
+      const b = document.createElement("div");
+      b.className = "bet-tag"; b.textContent = "Bet: " + p.bet.toLocaleString();
+      b.style.left = bp.x + "%"; b.style.top = bp.y + "%";
+      felt.appendChild(b);
+    }
+  });
+
+  // ---- log feed ----
+  const logLines = [
+    { c:"sys",  h:"— New hand #214 —" },
+    { c:"",     t:`<b>Priya</b> posts small blind <b>10</b>` },
+    { c:"",     t:`<b>Devon</b> posts big blind <b>20</b>` },
+    { c:"",     t:`<b>Marco</b> folds` },
+    { c:"",     t:`<b>Lena</b> raises to <b>80</b>` },
+    { c:"",     t:`<b>Kofi</b> goes <b>all-in 540</b>` },
+    { c:"sys",  t:`The flop shows <span class="cards">[A K 2]</span>` },
+    { c:"",     t:`<b>Aanya</b> checks` },
+    { c:"",     t:`<b>Priya</b> bets <b>200</b>` },
+    { c:"win",  t:`<b>Theo</b> wins <b>1,240</b> with two pair` },
+  ];
+  document.getElementById("logBody").innerHTML = logLines
+    .map(l => `<div class="log-line ${l.c}">${l.t || l.h}</div>`).join("");
+
+  // ---- bet slider <-> input sync (interactive demo) ----
+  const slider = document.getElementById("betSlider");
+  const input  = document.getElementById("betInput");
+  const raiseSub = document.getElementById("raiseSub");
+  const POT = 1240, MIN = 20, MAX = 2000;
+  function setBet(v) {
+    v = Math.max(MIN, Math.min(MAX, Math.round(v / 10) * 10));
+    slider.value = v; input.value = v;
+    raiseSub.textContent = v >= MAX ? "all-in" : "to " + v.toLocaleString();
+  }
+  slider.addEventListener("input", () => setBet(+slider.value));
+  input.addEventListener("input",  () => setBet(+input.value));
+  document.querySelectorAll(".quick").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const map = { min: MIN, "2x": 40, "3x": 60, pot: POT, all: MAX };
+      setBet(map[btn.dataset.q]);
+    });
+  });
+
+  // ---- tiny live clock in navbar (purely cosmetic) ----
+  let t = 42;
+  setInterval(() => {
+    t = (t + 1) % 60;
+    document.getElementById("navClock").textContent =
+      "00:" + String(t).padStart(2, "0");
+  }, 1000);
+</script>
+</body>
+</html>

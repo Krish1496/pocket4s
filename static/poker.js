@@ -355,30 +355,34 @@ function renderSeats() {
 
 // Which side of the pod the hole cards sit on (they face the table center,
 // like PokerNow): bottom -> above, top -> below, sides -> toward center.
+// On the racetrack the caps reach high/low, so x-extremes are ALWAYS a side
+// (left/right) regardless of y; only the flat rails use the y bands.
 function seatZone(x, y) {
+  if (x <= 15) return "left";
+  if (x >= 85) return "right";
   if (y >= 65) return "bottom";
   if (y <= 28) return "top";
   return x < 50 ? "left" : "right";
 }
 
-// PokerNow DESKTOP racetrack: 2 seats along the top, 2 along the bottom, and
-// 3 down each side -- pods sit just outside the oval rim. Hero is v0 (bottom).
+// PokerNow DESKTOP racetrack (stadium): flat top & bottom rails + full
+// semicircle caps left & right. Layout is LEFT-RIGHT SYMMETRIC with NO seat
+// at dead-center (so the Start button never overlaps a pod). Hero sits at
+// bottom-RIGHT with a mirror partner bottom-left; 2 on each rail, 3 on each
+// cap. Seats run clockwise from the hero.
 function desktopSeat(v, n) {
   if (n === 10) {
-    // All 10 sit on ONE ellipse (center 50,50; semi-axes ~54 x 52) so every
-    // seat is the same distance from the felt rim. 3/5/8/10 are the angular
-    // midpoints between their fixed neighbours.
     const slots = [
-      [66, 99],      // 1 hero (bottom-right) -- fixed
-      [34, 99],      // 2 bottom-left -- fixed
-      [6.5, 80.8],   // 3 even between 2 and 4, on the ring
-      [-4, 50],      // 4 left-mid -- fixed
-      [6.5, 19.2],   // 5 even between 4 and 6, on the ring
-      [34, 0],       // 6 top-left -- fixed
-      [66, 0],       // 7 top-right -- fixed
-      [93.5, 19.2],  // 8 even between 7 and 9, on the ring
-      [104, 50],     // 9 right-mid -- fixed
-      [93.5, 80.8],  // 10 even between 9 and 1, on the ring
+      [62, 103],   // 0 hero    -- bottom-right (center is left empty)
+      [97, 78],    // 1 right cap, lower
+      [101, 50],   // 2 right cap, middle
+      [97, 22],    // 3 right cap, upper
+      [62, -4],    // 4 top-right rail
+      [38, -4],    // 5 top-left rail
+      [3, 22],     // 6 left cap, upper
+      [-1, 50],    // 7 left cap, middle
+      [3, 78],     // 8 left cap, lower
+      [38, 103],   // 9 bottom-left rail (mirror of hero)
     ];
     return slots[v];
   }

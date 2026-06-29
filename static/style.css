@@ -24,6 +24,9 @@
 /* Flat matte charcoal canvas -- no gradient. */
 body {
   background: var(--bg);
+  font-family: "Inter", Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Playing cards ---------------------------------------------------------
@@ -68,15 +71,17 @@ body {
   box-shadow: none;
 }
 
-/* Felt table -- thin vector outline oval on the dark canvas (prototype look). */
+/* Felt table -- thin vector RACETRACK (stadium) outline: flat top & bottom
+   rails + full semicircle caps left & right. border-radius:pill on a wide
+   box yields exactly that (cap radius = half the table height). */
 .felt {
-  width: min(1180px, 76vw);
-  aspect-ratio: 1.95 / 1;
-  max-height: 64vh;
+  width: min(1180px, 80vw);
+  aspect-ratio: 2.1 / 1;
+  max-height: 62vh;
   margin: 0 auto;
   background: transparent;
   border: 1.5px solid var(--line);
-  border-radius: 50%;
+  border-radius: 9999px;
   box-shadow: none;
   position: relative;
 }
@@ -198,52 +203,55 @@ body {
 /* Modals ----------------------------------------------------------------- */
 .modal-wrap {
   position: fixed; inset: 0; z-index: 50; padding: 1rem;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.72);
   display: flex; align-items: center; justify-content: center;
 }
 .modal-card {
-  background: #1e293b; border-radius: 1rem; padding: 1.5rem;
+  background: var(--bg-2); border-radius: 8px; padding: 1.5rem;
   width: 100%; max-width: 24rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  outline: 1px solid #334155;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--line-soft);
+  outline: none;
+  color: var(--txt);
 }
 
 /* Reusable controls ------------------------------------------------------ */
 .inp {
-  width: 100%; border-radius: 0.5rem; background: #0f172a;
-  border: 1px solid #475569; padding: 0.5rem 0.75rem; color: #f1f5f9;
+  width: 100%; border-radius: 5px; background: var(--bg);
+  border: 1px solid var(--line); padding: 0.5rem 0.75rem; color: var(--txt);
 }
-.inp:focus { outline: none; box-shadow: 0 0 0 2px #34d399; }
+.inp:focus { outline: none; border-color: var(--accent-call); box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.35); }
 .btn-primary {
-  background: #10b981; color: #0f172a; font-weight: 700;
-  padding: 0.6rem 1.25rem; border-radius: 0.5rem;
+  background: var(--accent-call); color: #08142b; font-weight: 700;
+  padding: 0.6rem 1.25rem; border-radius: 5px; border: 1px solid var(--accent-call);
 }
-.btn-primary:hover { background: #34d399; }
+.btn-primary:hover { filter: brightness(1.08); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-muted {
-  background: #334155; color: #e2e8f0; font-weight: 600;
-  padding: 0.5rem 0.9rem; border-radius: 0.5rem;
+  background: transparent; color: var(--txt-dim); font-weight: 600;
+  padding: 0.5rem 0.9rem; border-radius: 5px; border: 1px solid var(--line);
 }
-.btn-muted:hover { background: #475569; }
-.act-btn { font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 0.5rem; }
+.btn-muted:hover { background: rgba(255, 255, 255, 0.05); color: var(--txt); border-color: var(--accent-call); }
+.act-btn { font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 5px; }
 .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.tab-btn { color: #94a3b8; }
-.tab-btn.active { color: #34d399; border-bottom: 2px solid #34d399; }
+.tab-btn { color: var(--txt-faint); }
+.tab-btn.active { color: var(--accent-call); border-bottom: 2px solid var(--accent-call); }
 
 /* Run-it-twice vote bar + stacked run boards ---------------------------- */
 .runvote-bar {
   margin: 0.75rem auto 0; max-width: 560px; text-align: center;
-  background: #1e293b; border: 1px solid #f59e0b; border-radius: 0.7rem;
+  background: var(--bg-2); border: 1px solid var(--accent-bet); border-radius: 6px;
   padding: 0.7rem;
 }
-.runvote-bar .rv-title { font-size: 0.9rem; font-weight: 800; color: #fde68a; margin-bottom: 0.5rem; }
+.runvote-bar .rv-title { font-size: 0.9rem; font-weight: 800; color: var(--accent-bet); margin-bottom: 0.5rem; }
 .runvote-bar .rv-row { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 0.4rem; }
 .runvote-bar .rv {
-  background: #334155; color: #e2e8f0; font-weight: 900; font-size: 1.05rem;
-  width: 46px; height: 46px; border-radius: 0.5rem;
+  background: transparent; color: var(--txt-dim); border: 1px solid var(--line);
+  font-weight: 900; font-size: 1.05rem;
+  width: 46px; height: 46px; border-radius: 5px;
 }
-.runvote-bar .rv:hover { background: #f59e0b; color: #1e293b; }
-.runvote-bar .rv-tally { font-size: 0.72rem; color: #94a3b8; }
+.runvote-bar .rv:hover { background: var(--accent-bet); color: var(--bg); border-color: var(--accent-bet); }
+.runvote-bar .rv-tally { font-size: 0.72rem; color: var(--txt-faint); }
 
 .runs-row { display: flex; flex-direction: column; gap: 4px; align-items: center; margin-top: 6px; }
 .run-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; }
@@ -268,18 +276,18 @@ body {
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; line-height: 1;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.7);
-  color: #e2e8f0; border: 1px solid #334155;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--txt-dim); border: 1px solid var(--line);
   cursor: pointer;
 }
-.menu-toggle:hover { background: rgba(30, 41, 59, 0.9); }
-.menu-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 55; }
+.menu-toggle:hover { background: rgba(255, 255, 255, 0.05); color: var(--txt); }
+.menu-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 55; }
 .side-menu {
   position: fixed; top: 0; left: 0; height: 100%;
   width: 240px; max-width: 82vw; z-index: 56;
-  background: #0f172a; border-right: 1px solid #334155;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  background: var(--bg-2); border-right: 1px solid var(--line-soft);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.55);
   display: flex; flex-direction: column; gap: 8px;
   padding: 60px 14px 16px;
   transform: translateX(-100%);
@@ -289,7 +297,7 @@ body {
 .side-menu .btn-muted, .side-menu .btn-primary { width: 100%; text-align: left; }
 .side-menu-title {
   font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
-  color: #94a3b8; margin-bottom: 2px;
+  color: var(--txt-faint); margin-bottom: 2px;
 }
 
 /* Pre-move bar ---------------------------------------------------------- */
@@ -298,21 +306,21 @@ body {
   max-width: 640px;
   display: flex; align-items: center; justify-content: center;
   flex-wrap: wrap; gap: 0.4rem;
-  background: #1e293b; border-radius: 0.6rem; padding: 0.5rem;
-  outline: 1px solid #334155;
+  background: var(--bg-2); border-radius: 6px; padding: 0.5rem;
+  border: 1px solid var(--line-soft);
 }
 .pm {
-  background: #334155; color: #e2e8f0;
-  border-radius: 0.4rem; padding: 0.45rem 0.8rem;
+  background: transparent; color: var(--txt-dim); border: 1px solid var(--line);
+  border-radius: 5px; padding: 0.45rem 0.8rem;
   font-size: 0.85rem; font-weight: 600;
 }
-.pm:hover { background: #475569; }
-.pm.active { background: #f59e0b; color: #1e293b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.6); }
-.pm.pm-clear { background: transparent; color: #94a3b8; }
-.pm.pm-clear:hover { color: #e2e8f0; }
+.pm:hover { background: rgba(255,255,255,0.05); color: var(--txt); }
+.pm.active { background: var(--accent-bet); color: var(--bg); box-shadow: 0 0 0 2px rgba(227, 179, 65, 0.45); }
+.pm.pm-clear { background: transparent; color: var(--txt-faint); border-color: transparent; }
+.pm.pm-clear:hover { color: var(--txt); }
 .pm kbd {
-  background: #0f172a; color: #cbd5e1; border-radius: 4px;
-  padding: 0 5px; font-size: 0.7rem; margin-left: 3px; border: 1px solid #475569;
+  background: var(--bg); color: var(--txt-dim); border-radius: 4px;
+  padding: 0 5px; font-size: 0.7rem; margin-left: 3px; border: 1px solid var(--line);
 }
 .seat.away .pod { opacity: 0.55; }
 .away-tag { color: #fca5a5; font-size: 10px; font-weight: 700; }
@@ -323,30 +331,31 @@ body {
 
 .host-menu {
   position: fixed; z-index: 60; width: 200px;
-  background: #0f172a; color: #e2e8f0;
-  border: 1px solid #f59e0b; border-radius: 0.6rem;
-  padding: 0.6rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  background: var(--bg-2); color: var(--txt);
+  border: 1px solid var(--accent-bet); border-radius: 6px;
+  padding: 0.6rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 .host-menu .hm-title {
-  font-size: 0.8rem; font-weight: 800; color: #fde68a;
+  font-size: 0.8rem; font-weight: 800; color: var(--accent-bet);
   margin-bottom: 0.5rem; text-align: center;
 }
 .host-menu .hm-row { display: flex; gap: 0.3rem; margin-bottom: 0.45rem; }
 .host-menu .hm-row:last-child { margin-bottom: 0; }
 .host-menu .hm-q {
-  flex: 1; background: #334155; color: #e2e8f0;
-  border-radius: 0.35rem; padding: 0.35rem 0; font-size: 0.72rem; font-weight: 700;
+  flex: 1; background: transparent; color: var(--txt-dim); border: 1px solid var(--line);
+  border-radius: 4px; padding: 0.35rem 0; font-size: 0.72rem; font-weight: 700;
 }
-.host-menu .hm-q:hover { background: #475569; }
+.host-menu .hm-q:hover { background: rgba(255,255,255,0.05); color: var(--txt); border-color: var(--accent-bet); }
 .host-menu .hm-input {
-  flex: 1; min-width: 0; background: #1e293b; color: #fff;
-  border: 1px solid #475569; border-radius: 0.35rem; padding: 0.35rem 0.5rem; font-size: 0.85rem;
+  flex: 1; min-width: 0; background: var(--bg); color: var(--txt);
+  border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.5rem; font-size: 0.85rem;
 }
 .host-menu .hm-set {
-  background: #f59e0b; color: #1e293b; font-weight: 800;
-  border-radius: 0.35rem; padding: 0.35rem 0.7rem; font-size: 0.8rem;
+  background: var(--accent-bet); color: var(--bg);
+  border: 1px solid var(--accent-bet); font-weight: 800;
+  border-radius: 4px; padding: 0.35rem 0.7rem; font-size: 0.8rem;
 }
-.host-menu .hm-set:hover { background: #fbbf24; }
+.host-menu .hm-set:hover { filter: brightness(1.08); }
 
 /* Live best-hand readout above a seat ----------------------------------- */
 .hand-name {
@@ -399,9 +408,9 @@ body {
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 360px; max-width: 90vw;
-  background: #1e293b; border-left: 1px solid #334155;
+  background: var(--bg-2); border-left: 1px solid var(--line-soft);
   display: flex; flex-direction: column;
-  z-index: 45; box-shadow: -8px 0 30px rgba(0, 0, 0, 0.5);
+  z-index: 45; box-shadow: -8px 0 30px rgba(0, 0, 0, 0.55);
   transform: translateX(0); transition: transform 0.25s ease;
 }
 .drawer.hidden { display: flex; transform: translateX(100%); }
@@ -951,3 +960,36 @@ body {
   font-weight: 800;
   box-shadow: none;
 }
+
+/* ============ Menu / modal theme overrides (beat Tailwind utilities) ============
+   The table markup uses some leftover Tailwind slate/emerald utilities. Bend
+   them to the flat charcoal + blue palette so every menu matches exactly. */
+
+/* All checkboxes + range sliders -> blue accent (was emerald). */
+input[type="checkbox"], input[type="range"] { accent-color: var(--accent-call) !important; }
+
+/* Header + drawer/form dividers -> soft charcoal line (was slate-700/800). */
+header.border-b { border-color: var(--line-soft) !important; }
+.drawer .border-b, .drawer .border-t,
+.tab-btn, #chatForm, #requestsPanel { border-color: var(--line-soft) !important; }
+
+/* Themed chat input inside the drawer (was a slate/emerald Tailwind input). */
+#chatInput {
+  background: var(--bg) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--txt) !important;
+}
+#chatInput:focus {
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.35) !important;
+  border-color: var(--accent-call) !important;
+}
+
+/* Requests panel: amber accent stays (matches --accent-bet), recolor backing. */
+#requestsPanel { background: rgba(26, 29, 32, 0.7) !important; }
+.req-badge { background: var(--accent-bet); color: var(--bg); }
+
+/* Requests rows generated by panels.js (bg-slate-900 + emerald OK button). */
+#requestsList > div { background: var(--bg) !important; border: 1px solid var(--line-soft); }
+#requestsList .bg-emerald-500 { background: var(--accent-call) !important; color: #08142b !important; }
+
+/* Connection status dot uses semantic colors -- leave green/amber/red as-is. */
