@@ -1,23 +1,27 @@
 :root {
-  /* PokerNow BLUE theme (sampled from the reference screenshots). */
-  --felt: #2c40d8;
-  --felt-mid: #2335b8;
-  --felt-edge: #1a2790;
-  --rail: #141419;
-  --pod: #313131;
-  --pod-active: #fdfdfd;
-  --chip: #d6e84f;
-  --dealer: #ffffff;
-  --pot-pill: #2336c0;
+  /* Flat minimalist theme (dark, 2D, vector outline). */
+  --bg: #121416;
+  --bg-2: #1a1d20;
   --line: #3a3f45;          /* thin vector table outline */
+  --line-soft: #2a2e33;
+  --pod: #1e2227;           /* flat seat badge */
+  --pod-line: #353a40;
+  --pod-active: #1e2227;
+  --chip: #23272c;          /* flat bet tag bg */
+  --dealer: #e6e8ea;
+  --pot-pill: #23272c;
+  --txt: #e6e8ea;
+  --txt-dim: #9aa0a6;
+  --txt-faint: #6b7178;
+  --accent-bet: #e3b341;
+  --accent-call: #4f8cff;
+  --accent-fold: #b35454;
   --card-w: 66px;
 }
 
-/* PokerNow: a near-black room behind the felt. */
+/* Flat matte charcoal room -- no gradient. */
 body {
-  background:
-    radial-gradient(1200px 900px at 50% 0%, #232227 0%, #161518 58%, #0e0d10 100%)
-    fixed;
+  background: var(--bg);
 }
 
 /* Playing cards ---------------------------------------------------------
@@ -26,7 +30,7 @@ body {
 .card {
   width: var(--card-w);
   height: calc(var(--card-w) * 1.40);
-  border-radius: 8px;
+  border-radius: 2px;
   background: #fdfdfd;
   color: #111;
   display: inline-flex;
@@ -36,26 +40,24 @@ body {
   padding-top: calc(var(--card-w) * 0.07);
   font-weight: 700;
   line-height: 0.9;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
   user-select: none;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
-/* PokerNow: bold SERIF rank up top, large suit right below -- both in the
-   upper portion so they stay visible when the name pod overlaps the bottom. */
+/* Flat cards: bold SANS rank up top, suit right below. */
 .card .rank {
   font-size: calc(var(--card-w) * 0.52);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: ui-sans-serif, system-ui, sans-serif;
   font-weight: 700;
 }
 .card .suit { font-size: calc(var(--card-w) * 0.50); margin-top: calc(var(--card-w) * -0.04); }
 .card.red { color: #e0282d; }
 .card.black { color: #111; }
 .card.back {
-  background:
-    repeating-linear-gradient(45deg, #c0322f, #c0322f 7px, #d9514e 7px, #d9514e 14px);
-  border: 2px solid #f2dada;
+  background: #2b3038;            /* flat solid back, no pattern */
+  border: 1px solid #3a4049;
 }
 .card.small { --card-w: 46px; }   /* height + fonts follow automatically */
 .card.placeholder {
@@ -600,7 +602,7 @@ body {
 .flip-front { transform: rotateY(0deg); }
 .flip-front.card { width: 100%; height: 100%; }
 .flip-back {
-  transform: rotateY(180deg); border-radius: 8px;
+  transform: rotateY(180deg); border-radius: 2px;
   background:
     repeating-linear-gradient(45deg, #c0322f, #c0322f 7px, #d9514e 7px, #d9514e 14px);
   border: 2px solid #f2dada;
@@ -872,69 +874,58 @@ body {
 /* Run-it-twice vote countdown. */
 .rv-clock { color: #fca5a5; font-weight: 800; margin-left: 6px; }
 
-/* ============ Juicy UI polish (interactive / animated) ============ */
+/* ============ Flat minimalist overrides ============ */
 
-/* Felt: flat vector outline -- no fill, no sheen (PokerNow desktop look). */
-.felt::before { content: none; }
+.felt::before { content: none; }   /* outline only, no fill/sheen */
 
-/* Active player: bright animated ring that breathes. */
+/* Active player: a plain blue outline -- no glow, no animation. */
 .seat.turn .pod {
-  animation: turn-breathe 1.6s ease-in-out infinite;
+  background: var(--pod);
+  border-color: var(--accent-call) !important;
+  box-shadow: none !important;
 }
-@keyframes turn-breathe {
-  0%,100% { box-shadow: 0 0 0 2px rgba(96,165,250,0.55), 0 4px 14px rgba(0,0,0,0.55); }
-  50%     { box-shadow: 0 0 0 4px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.7), 0 4px 14px rgba(0,0,0,0.55); }
-}
+.seat.turn .name, .seat.turn .stack { color: var(--txt) !important; }
 
-/* Pot pill: gentle pulse + sheen, and a pop when it grows. */
+/* Pot tag: flat container, no pulse/sheen. */
 .pot-label {
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0));
-  transition: transform 0.15s ease;
+  background: var(--pot-pill);
+  background-image: none;
+  border: 1px solid var(--line-soft);
+  box-shadow: none;
+  font-weight: 700;
 }
-.pot-label.bump { animation: pot-pop 0.4s cubic-bezier(.34,1.56,.64,1); }
-@keyframes pot-pop { 0%{transform:scale(1);} 40%{transform:scale(1.22);} 100%{transform:scale(1);} }
+.pot-label.bump { animation: none; }
 
-/* Bet chips: glossy poker-chip look with a dashed rim + drop on appear. */
+/* Bet tag: flat text chip, pushed toward center (positioned in JS). */
 .seat .bet-chip {
-  background:
-    radial-gradient(circle at 50% 35%, #eef58a 0%, var(--chip) 55%, #b9c93f 100%);
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35),
-              inset 0 0 0 4px rgba(0,0,0,0.12),
-              0 3px 8px rgba(0,0,0,0.55);
+  background: var(--chip);
+  color: var(--txt);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  box-shadow: none;
+  font-weight: 700;
+  animation: none;
 }
 
-/* Action buttons: springy hover + press feedback. */
-.act-btn { transition: transform .08s ease, box-shadow .15s ease, background .15s ease, color .15s ease; }
-.act-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.45); }
-.act-btn:not(:disabled):active { transform: translateY(0) scale(0.97); }
+/* Action buttons: flat blocks, no transforms/shadows. */
+.act-btn { transition: background .12s ease, color .12s ease, border-color .12s ease; }
+.act-btn:not(:disabled):hover { background: rgba(255,255,255,0.05); }
+.btn-muted, .btn-primary { transition: background .12s ease, border-color .12s ease; }
+.btn-muted:hover, .btn-primary:hover { filter: none; background: rgba(255,255,255,0.06); }
 
-/* Header / dock buttons: subtle lift. */
-.btn-muted, .btn-primary { transition: transform .08s ease, box-shadow .15s ease, filter .15s ease; }
-.btn-muted:hover, .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.12); }
-.btn-muted:active, .btn-primary:active { transform: translateY(0) scale(0.97); }
-
-/* Hero hole cards: gentle hover lift on desktop. */
-@media (min-width: 701px) {
-  .seat.you .cards > * { transition: transform .12s ease; }
-  .seat.you:hover .cards > *:first-child { transform: rotate(-9deg) translateY(-5px); }
-  .seat.you:hover .cards > *:last-child  { transform: rotate(9deg) translateY(-5px); }
-}
-
-/* Winner: richer golden glow + a little bounce. */
+/* Winner: simple flat highlight, no bounce/glow. */
 .seat.winner .pod {
-  animation: winner-pop 0.5s cubic-bezier(.34,1.56,.64,1), winner-glow 1s ease-in-out 0.5s infinite !important;
+  animation: none !important;
+  border-color: #7fbf7f !important;
+  box-shadow: none !important;
 }
-@keyframes winner-pop { 0%{transform:scale(1);} 45%{transform:scale(1.14);} 100%{transform:scale(1);} }
+.seat.winner .name { color: #aee0ae; }
 
-/* Dealer button: shiny disc. */
+/* Dealer button: flat disc. */
 .seat .badge {
-  background: radial-gradient(circle at 50% 35%, #ffffff, #cfd8e3);
-  color: #1e293b; font-weight: 900;
-  box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.15), 0 2px 5px rgba(0,0,0,0.5);
+  background: var(--dealer);
+  color: var(--bg);
+  font-weight: 800;
+  box-shadow: none;
 }
 
-/* Respect users who prefer less motion. */
-@media (prefers-reduced-motion: reduce) {
-  .seat.turn .pod, .pot-label.bump, .seat.winner .pod { animation: none !important; }
-  .act-btn:hover, .btn-muted:hover, .btn-primary:hover { transform: none; }
-}
