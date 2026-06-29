@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flat Poker — Minimal Prototype</title>
+<style>
+  /* ============ 1. GLOBAL THEME & PALETTE ============ */
+  :root {
+    --bg: #121416;
+    --bg-2: #1a1d20;
+    --line: #3a3f45;          /* thin table outline */
+    --line-soft: #2a2e33;
+    --txt: #e6e8ea;
+    --txt-dim: #9aa0a6;
+    --txt-faint: #6b7178;
+    --card: #f7f8f8;
+    --card-red: #d83a3a;
+    --card-black: #16191c;
+    --accent-bet: #e3b341;    /* bet/raise */
+    --accent-call: #4f8cff;   /* check/call */
+    --accent-fold: #b35454;   /* fold */
+    --chip-bg: #23272c;
+    --pod-bg: #1e2227;
+    --pod-line: #353a40;
+    --font: "Inter", Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: var(--font);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; color: inherit; }
+
+  /* ============ 6. TOP NAVBAR ============ */
+  .navbar {
+    height: 44px; flex: 0 0 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg-2);
+  }
+  .nav-left { display: flex; align-items: center; gap: 16px; }
+  .nav-tag { font-size: 12px; color: var(--txt-dim); letter-spacing: 0.2px; }
+  .nav-tag b { color: var(--txt); font-weight: 600; }
+  .nav-clock {
+    font-variant-numeric: tabular-nums; font-size: 12px; color: var(--txt);
+    border: 1px solid var(--line-soft); border-radius: 3px; padding: 2px 8px;
+  }
+  .nav-right { display: flex; align-items: center; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    background: transparent; border: 1px solid transparent; border-radius: 4px;
+    color: var(--txt-dim);
+  }
+  .icon-btn:hover { background: var(--bg); color: var(--txt); border-color: var(--line-soft); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ============ MAIN STAGE ============ */
+  .stage { flex: 1 1 auto; position: relative; min-height: 0; }
+
+  /* ============ 2. CENTRAL TABLE ============ */
+  .table-area {
+    position: absolute; left: 50%; top: 48%;
+    transform: translate(-50%, -50%);
+    width: min(78vw, 1000px);
+    height: min(58vh, 540px);
+  }
+  .table-outline {
+    position: absolute; inset: 0;
+    border: 1.5px solid var(--line);
+    border-radius: 9999px;          /* oval */
+  }
+  .table-mark {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 11px; letter-spacing: 4px; color: var(--line-soft);
+    text-transform: uppercase; user-select: none; pointer-events: none;
+  }
+  .center {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
+  }
+  .pot-tag {
+    font-size: 12px; color: var(--txt); background: var(--chip-bg);
+    border: 1px solid var(--line-soft); border-radius: 3px;
+    padding: 3px 10px; font-variant-numeric: tabular-nums;
+  }
+  .pot-tag span { color: var(--txt-dim); }
+
+  /* community cards */
+  .board { display: flex; gap: 6px; }
+  .card {
+    width: 44px; height: 62px; background: var(--card);
+    border-radius: 2px; display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: flex-start;
+    padding: 4px 5px; line-height: 1;
+    font-weight: 700; box-shadow: none;
+  }
+  .card .r { font-size: 18px; }
+  .card .s { font-size: 14px; margin-top: 1px; }
+  .card.red { color: var(--card-red); }
+  .card.black { color: var(--card-black); }
+  .card.empty { background: transparent; border: 1px dashed var(--line-soft); }
+  .phase { font-size: 10px; letter-spacing: 2px; color: var(--txt-faint); text-transform: uppercase; }
+
+  /* ============ 3. PLAYER SEATS (radial) ============ */
+  .seat {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .avatar {
+    width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
+    background: var(--chip-bg); border: 1px solid var(--pod-line);
+    display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--txt-dim);
+  }
+  .pod {
+    background: var(--pod-bg); border: 1px solid var(--pod-line);
+    border-radius: 3px; padding: 4px 8px; min-width: 78px;
+  }
+  .pod .nm { font-size: 12px; font-weight: 600; color: var(--txt); }
+  .pod .st { font-size: 12px; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+  .seat.active .pod { border-color: var(--accent-call); }
+  .seat.active .avatar { border-color: var(--accent-call); color: var(--txt); }
+  .seat.folded { opacity: 0.4; }
+  .seat .dealer {
+    position: absolute; top: -8px; right: -8px;
+    width: 17px; height: 17px; border-radius: 50%;
+    background: var(--txt); color: var(--bg);
+    font-size: 10px; font-weight: 800; display: grid; place-items: center;
+  }
+  .bet-tag {
+    position: absolute; font-size: 11px; color: var(--txt);
+    background: var(--chip-bg); border: 1px solid var(--line-soft);
+    border-radius: 3px; padding: 1px 6px; font-variant-numeric: tabular-nums;
+  }
+  .bet-tag span { color: var(--txt-faint); }
+
+  /* ============ 5. LOG / CHAT PANEL ============ */
+  .log {
+    position: absolute; left: 12px; bottom: 12px;
+    width: 290px; max-height: 40vh;
+    background: rgba(18, 20, 22, 0.85);
+    border: 1px solid var(--line-soft); border-radius: 4px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .log-head {
+    font-size: 11px; color: var(--txt-faint); text-transform: uppercase; letter-spacing: 1px;
+    padding: 6px 10px; border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between;
+  }
+  .log-body {
+    overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px;
+    font-size: 12px; font-variant-numeric: tabular-nums;
+  }
+  .log-body::-webkit-scrollbar { width: 6px; }
+  .log-body::-webkit-scrollbar-thumb { background: #2c3036; border-radius: 3px; }
+  .ln { color: var(--txt-dim); line-height: 1.4; }
+  .ln .who { color: var(--txt); }
+  .ln.win { color: #7fbf7f; }            /* muted green */
+  .ln.sys { color: var(--txt-faint); }
+  .ln .brd { color: var(--accent-bet); }
+  .log-input {
+    border-top: 1px solid var(--line-soft); display: flex;
+  }
+  .log-input input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--txt); font: inherit; font-size: 12px; padding: 7px 10px;
+  }
+  .log-input input::placeholder { color: var(--txt-faint); }
+
+  /* ============ 4. BOTTOM CONTROL BAR ============ */
+  .controls {
+    flex: 0 0 auto; border-top: 1px solid var(--line-soft); background: var(--bg-2);
+    display: flex; align-items: stretch; gap: 18px; padding: 10px 16px 12px;
+    justify-content: flex-end;
+  }
+  .hole {
+    display: flex; align-items: center; gap: 5px; margin-right: auto;
+  }
+  .hole .card { width: 52px; height: 74px; }
+  .hole .card .r { font-size: 22px; } .hole .card .s { font-size: 17px; }
+
+  .util { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .util label {
+    font-size: 11px; color: var(--txt-dim); display: flex; align-items: center; gap: 5px; cursor: pointer;
+  }
+  .util input { accent-color: var(--accent-call); width: 13px; height: 13px; }
+
+  .betbox { display: flex; flex-direction: column; gap: 6px; justify-content: center; min-width: 300px; }
+  .quick { display: flex; gap: 5px; align-items: center; }
+  .qbtn {
+    background: var(--chip-bg); border: 1px solid var(--pod-line); border-radius: 3px;
+    color: var(--txt-dim); font-size: 11px; font-weight: 600; padding: 5px 9px;
+  }
+  .qbtn:hover { color: var(--txt); border-color: var(--line); }
+  .amt {
+    width: 78px; background: var(--bg); border: 1px solid var(--pod-line); border-radius: 3px;
+    color: var(--txt); font: inherit; font-size: 13px; padding: 5px 8px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 3px;
+    background: var(--pod-line); border-radius: 2px; outline: none;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent-call); cursor: pointer; border: none;
+  }
+  .slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent-call); border: none; }
+
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .abtn {
+    border: 1px solid var(--pod-line); border-radius: 3px; background: var(--chip-bg);
+    color: var(--txt); font-size: 14px; font-weight: 700; letter-spacing: 0.3px;
+    padding: 0 22px; min-width: 110px; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .abtn small { font-weight: 500; font-size: 11px; color: var(--txt-dim); }
+  .abtn.fold  { border-color: var(--accent-fold);  color: #e08a8a; }
+  .abtn.call  { border-color: var(--accent-call);  color: #9bc0ff; }
+  .abtn.raise { border-color: var(--accent-bet); background: var(--accent-bet); color: #1a1206; }
+  .abtn.raise small { color: #4a3a10; }
+  .abtn:hover { filter: brightness(1.08); }
+
+  @media (max-width: 760px) {
+    .table-area { width: 92vw; height: 46vh; }
+    .log { width: 180px; max-height: 30vh; }
+    .controls { flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .betbox { min-width: 0; flex: 1 1 100%; order: 3; }
+    .hole { margin-right: 0; }
+    .util { display: none; }
+    .abtn { min-width: 0; flex: 1; padding: 10px 8px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- 6. TOP NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-tag">Blinds: <b>10 / 20</b></span>
+      <span class="nav-tag">Hand <b>#142</b></span>
+      <span class="nav-clock" id="clock">00:18</span>
+    </div>
+    <div class="nav-right">
+      <button class="icon-btn" title="Ledger / Stats" aria-label="Ledger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M9 19v-7M14 19V8M19 19v-11"/></svg>
+      </button>
+      <button class="icon-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z"/></svg>
+      </button>
+      <button class="icon-btn" title="Leave game" aria-label="Leave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- STAGE -->
+  <div class="stage">
+    <div class="table-area" id="tableArea">
+      <div class="table-outline"></div>
+      <div class="table-mark">No Limit Hold'em</div>
+
+      <!-- 2. POT + COMMUNITY CARDS -->
+      <div class="center">
+        <div class="pot-tag"><span>POT:</span> 1,240</div>
+        <div class="board">
+          <div class="card black"><span class="r">A</span><span class="s">&#9824;</span></div>
+          <div class="card red"><span class="r">K</span><span class="s">&#9829;</span></div>
+          <div class="card black"><span class="r">2</span><span class="s">&#9827;</span></div>
+          <div class="card empty"></div>
+          <div class="card empty"></div>
+        </div>
+        <div class="phase">Flop</div>
+      </div>
+
+      <!-- 3. SEATS (positioned by JS) -->
+      <div id="seats"></div>
+    </div>
+
+    <!-- 5. LOG / CHAT -->
+    <aside class="log">
+      <div class="log-head"><span>Game Log</span><span>Chat</span></div>
+      <div class="log-body" id="logBody"></div>
+      <div class="log-input"><input placeholder="Type a message…" /></div>
+    </aside>
+  </div>
+
+  <!-- 4. BOTTOM CONTROL BAR -->
+  <footer class="controls">
+    <div class="hole">
+      <div class="card red"><span class="r">Q</span><span class="s">&#9830;</span></div>
+      <div class="card black"><span class="r">Q</span><span class="s">&#9824;</span></div>
+    </div>
+
+    <div class="util">
+      <label><input type="checkbox" /> Fold to any bet</label>
+      <label><input type="checkbox" /> Check / Fold</label>
+      <label><input type="checkbox" /> Call any</label>
+    </div>
+
+    <div class="betbox">
+      <div class="quick">
+        <button class="qbtn" data-q="min">Min</button>
+        <button class="qbtn" data-q="2x">2x</button>
+        <button class="qbtn" data-q="3x">3x</button>
+        <button class="qbtn" data-q="pot">Pot</button>
+        <button class="qbtn" data-q="allin">All-In</button>
+        <input class="amt" id="amt" type="number" value="120" />
+      </div>
+      <input class="slider" id="slider" type="range" min="20" max="2000" step="10" value="120" />
+    </div>
+
+    <div class="actions">
+      <button class="abtn fold">FOLD</button>
+      <button class="abtn call">CHECK / CALL<small id="callamt">Call 80</small></button>
+      <button class="abtn raise">BET / RAISE<small id="raiseamt">to 120</small></button>
+    </div>
+  </footer>
+
+<script>
+  // ---- 3. radial seat layout (10 seats, hero bottom-center) ----
+  // [x%, y%] within the table-area; pods sit just outside the oval rim.
+  const SEATS = [
+    {x:50,y:104,you:true,nm:"You",st:"1,980",init:"Y"},
+    {x:16,y:96, nm:"Mara",  st:"2,340", init:"M", bet:80},
+    {x:-6,y:66, nm:"Devon", st:"1,120", init:"D"},
+    {x:-6,y:34, nm:"Iris",  st:"3,005", init:"I", folded:true},
+    {x:16,y:4,  nm:"Kenji", st:"760",   init:"K"},
+    {x:50,y:-8, nm:"Priya", st:"4,210", init:"P", dealer:true},
+    {x:84,y:4,  nm:"Sam",   st:"1,540", init:"S", bet:80},
+    {x:106,y:34,nm:"Noor",  st:"2,890", init:"N", active:true, bet:240},
+    {x:106,y:66,nm:"Leo",   st:"640",   init:"L"},
+    {x:84,y:96, nm:"Ava",   st:"1,275", init:"A", folded:true},
+  ];
+  const seatsEl = document.getElementById("seats");
+  SEATS.forEach((s) => {
+    const seat = document.createElement("div");
+    seat.className = "seat" + (s.active?" active":"") + (s.folded?" folded":"");
+    seat.style.left = s.x + "%"; seat.style.top = s.y + "%";
+    seat.innerHTML =
+      `<div class="avatar">${s.init}</div>` +
+      `<div class="pod"><div class="nm">${s.nm}</div><div class="st">${s.st}</div>` +
+      (s.dealer?`<div class="dealer">D</div>`:``) + `</div>`;
+    seatsEl.appendChild(seat);
+    if (s.bet != null) {
+      // bet tag pushed INWARD toward the table center.
+      const bt = document.createElement("div");
+      bt.className = "bet-tag"; bt.innerHTML = `<span>Bet</span> ${s.bet}`;
+      const dx = (50 - s.x), dy = (50 - s.y);
+      const len = Math.hypot(dx, dy) || 1;
+      bt.style.left = (s.x + dx/len*16) + "%";
+      bt.style.top  = (s.y + dy/len*16) + "%";
+      bt.style.transform = "translate(-50%,-50%)";
+      seatsEl.appendChild(bt);
+    }
+  });
+
+  // ---- 5. sample log lines ----
+  const LOG = [
+    {c:"sys", t:"— Hand #142 —"},
+    {c:"", h:"Priya", t:" posts small blind 10"},
+    {c:"", h:"Sam", t:" posts big blind 20"},
+    {c:"", h:"Noor", t:" raises to 80"},
+    {c:"", h:"Mara", t:" calls 80"},
+    {c:"", h:"You", t:" call 80"},
+    {c:"brd", t:"The flop shows [A&#9824; K&#9829; 2&#9827;]"},
+    {c:"", h:"Noor", t:" bets 240"},
+    {c:"win", t:"Mara wins 1,240 with Two Pair"},
+  ];
+  const lb = document.getElementById("logBody");
+  LOG.forEach((l) => {
+    const d = document.createElement("div");
+    d.className = "ln " + (l.c||"");
+    if (l.c === "brd") d.innerHTML = `<span class="brd">${l.t}</span>`;
+    else d.innerHTML = (l.h?`<span class="who">${l.h}</span>`:"") + l.t;
+    lb.appendChild(d);
+  });
+  lb.scrollTop = lb.scrollHeight;
+
+  // ---- 4. bet sizing slider <-> input ----
+  const slider = document.getElementById("slider"), amt = document.getElementById("amt");
+  const raiseamt = document.getElementById("raiseamt");
+  const POT = 1240, BB = 20, CALL = 80;
+  function setAmt(v){ v = Math.max(+slider.min, Math.min(+slider.max, v|0));
+    amt.value = v; slider.value = v; raiseamt.textContent = "to " + v.toLocaleString(); }
+  slider.addEventListener("input", () => setAmt(+slider.value));
+  amt.addEventListener("input", () => setAmt(+amt.value));
+  document.querySelectorAll(".qbtn").forEach((b) => b.onclick = () => {
+    const q = b.dataset.q;
+    setAmt(q==="min"?BB:q==="2x"?CALL*2:q==="3x"?CALL*3:q==="pot"?POT:+slider.max);
+  });
+  setAmt(120);
+
+  // ---- 6. running clock ----
+  let s = 18; const ck = document.getElementById("clock");
+  setInterval(() => { s = (s+1)%60; ck.textContent = "00:" + String(s).padStart(2,"0"); }, 1000);
+</script>
+</body>
+</html>
