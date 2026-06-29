@@ -713,6 +713,11 @@ body {
   /* Smaller community cards so they clear the side seats (3/4/8/9). */
   #board .card, #board .flip3d { --card-w: clamp(28px, 8vw, 42px); }
   #board { gap: 0.2rem; }
+  /* Keep the hand-rank tags from overflowing the narrow screen edges. */
+  .hand-name, .win-pct {
+    max-width: 90px; overflow: hidden; text-overflow: ellipsis;
+    font-size: 10px; padding: 1px 6px;
+  }
 }
 
 /* Voice chat dock (bottom-right, fully bottom) --------------------------- */

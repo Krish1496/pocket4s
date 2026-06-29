@@ -404,7 +404,7 @@ function portraitSeat(v, n) {
   if (v === 0) return [50, 90];
   const topIndex = Math.round(n / 2);
   if (v === topIndex) return [50, 12];
-  const X_L = 7, X_R = 93, Y_HI = 22, Y_LO = 78;
+  const X_L = 12, X_R = 88, Y_HI = 22, Y_LO = 78;
   if (v < topIndex) {                            // left column: bottom -> top
     const k = topIndex - 1, i = v - 1;
     const frac = k > 1 ? i / (k - 1) : 0.5;
