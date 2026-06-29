@@ -358,22 +358,24 @@ body {
 }
 .host-menu .hm-set:hover { filter: brightness(1.08); }
 
-/* Live best-hand readout above a seat ----------------------------------- */
+/* Live best-hand readout -- flat tag pinned to the BOTTOM-RIGHT of the name
+   pod (matches the flat bet-tag style). */
 .hand-name {
-  position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: -8px; right: -4px;
   white-space: nowrap;
-  background: rgba(15, 23, 42, 0.92); color: #fde68a;
-  border: 1px solid #f59e0b; border-radius: 999px;
-  font-size: 11px; font-weight: 800; padding: 1px 9px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+  background: var(--chip); color: var(--txt-dim);
+  border: 1px solid var(--line-soft); border-radius: 3px;
+  font-size: 10px; font-weight: 600; padding: 1px 6px;
+  box-shadow: none; z-index: 3;
 }
+/* Win probability -- flat tag pinned to the TOP-RIGHT of the name pod. */
 .win-pct {
-  position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: -8px; right: -4px;
   white-space: nowrap;
-  background: #052e16; color: #6ee7b7;
-  border: 1px solid #10b981; border-radius: 999px;
-  font-size: 11px; font-weight: 900; padding: 1px 9px;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  background: var(--chip); color: var(--accent-call);
+  border: 1px solid var(--accent-call); border-radius: 3px;
+  font-size: 10px; font-weight: 700; padding: 1px 6px;
+  box-shadow: none; z-index: 3;
 }
 
 /* Action flash bubble (CHECK / CALL 4 / FOLD ...) ----------------------- */
@@ -1099,3 +1101,9 @@ body.bar-open main { padding-bottom: 130px; }
   body.bar-open .bottom-dock { bottom: 190px; }
   body.bar-open main { padding-bottom: 210px; }
 }
+
+/* Premove (not-your-turn): the SAME triggers, ghosted; the armed one fills. */
+.actionbar .btn.ghost { opacity: 0.4; }
+.actionbar .btn.ghost:hover:not(:disabled) { opacity: 0.65; }
+.actionbar .btn.fold.armed  { background: var(--accent-fold);  color: #fff;     opacity: 1; }
+.actionbar .btn.call.armed  { background: var(--accent-call);  color: #08142b;  opacity: 1; }

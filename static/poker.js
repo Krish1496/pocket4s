@@ -504,13 +504,13 @@ function seatEl(p, xPct, yPct) {
     const eq = document.createElement("div");
     eq.className = "win-pct";
     eq.textContent = p.win_pct + "%";
-    wrap.append(eq);
+    pod.append(eq);                 // anchored to the name pod (top-right)
   }
   if (p.hand_name) {
     const hn = document.createElement("div");
     hn.className = "hand-name";
     hn.textContent = p.hand_name;
-    wrap.append(hn);
+    pod.append(hn);                 // anchored to the name pod (bottom-right)
   }
   if (p.round_bet > 0) {
     const bet = document.createElement("div");
@@ -580,19 +580,33 @@ function renderActionBar() {
   const callSub = $("callSub"), raiseSub = $("raiseSub");
 
   if (!myTurn) {
-    // Not my turn: triggers disabled, sizing greyed; checkboxes drive premoves.
+    // Not my turn: the SAME trigger buttons, GHOSTED -> click to arm a
+    // premove. The armed one lights up solid (no separate premove bar).
     PP.raiseBounds = null;
-    [fold, call, raise].forEach((b) => { b.disabled = true; b.classList.remove("pressed"); });
-    setLabel(call, facing ? "Check / Call" : "Check");
+    const callMove = facing ? "call" : "check";
+    fold.disabled = false; call.disabled = false; raise.disabled = true;  // no pre-raise
+    fold.dataset.pm = "fold"; call.dataset.pm = callMove;
+    setLabel(call, facing ? "Call" : "Check");
     callSub.textContent = facing ? `call ${callAmt}` : "";
     setLabel(raise, "Bet / Raise"); raiseSub.textContent = "";
+    const armedCall = pm === callMove || (callMove === "check" && pm === "checkfold");
+    [fold, call, raise].forEach((b) => b.classList.remove("pressed"));
+    fold.classList.toggle("armed", pm === "fold");
+    call.classList.toggle("armed", armedCall);
+    raise.classList.remove("armed");
+    // ghost any button that ISN'T the armed one
+    fold.classList.toggle("ghost", pm !== "fold");
+    call.classList.toggle("ghost", !armedCall);
+    raise.classList.add("ghost");
     setSizingDisabled(true);
     updateTimer();
     return;
   }
 
-  // My turn: triggers live; sizing is live only when a raise is legal.
-  [fold, call, raise].forEach((b) => { b.disabled = false; b.classList.remove("pressed"); });
+  // My turn: clear any premove ghosting; triggers act immediately.
+  [fold, call, raise].forEach((b) => {
+    b.classList.remove("ghost", "armed", "pressed"); delete b.dataset.pm;
+  });
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
@@ -800,21 +814,31 @@ function wireCore() {
     catch (e) { prompt("Copy this link:", location.href); }
   };
 
-  // Main triggers (single-step: FOLD / CHECK-CALL / BET-RAISE).
+  // Main triggers. On your turn they act immediately; otherwise they arm a
+  // premove (toggle off if you click the one already armed).
+  const premoveMode = () => !$("actionBar").classList.contains("myturn");
+  const armPremove = (btn) => {
+    const mv = btn.dataset.pm || null;
+    if (!mv) return;
+    const cur = PP.state.you.premove;
+    send({ type: "premove", move: mv === cur ? null : mv });
+  };
   $("btnFold").onclick = () => {
     if ($("btnFold").disabled) return;
+    if (premoveMode()) { armPremove($("btnFold")); return; }
     $("btnFold").classList.add("pressed"); doFold();
   };
   $("btnCall").onclick = () => {
     if ($("btnCall").disabled) return;
+    if (premoveMode()) { armPremove($("btnCall")); return; }
     $("btnCall").classList.add("pressed");
     const act = PP.state.you.can_check ? "check" : "call";
     send({ type: "action", action: act });
   };
   $("btnRaise").onclick = () => {
-    if ($("btnRaise").disabled) return;
+    if ($("btnRaise").disabled) return;       // disabled while pre-acting
     $("btnRaise").classList.add("pressed");
-    submitRaise();                       // submit the current slider/input amount
+    submitRaise();
   };
 
   // Bet sizing: slider <-> number input stay in sync.
