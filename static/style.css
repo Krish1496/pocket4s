@@ -9,6 +9,7 @@
   --chip: #d6e84f;
   --dealer: #ffffff;
   --pot-pill: #2336c0;
+  --line: #3a3f45;          /* thin vector table outline */
   --card-w: 66px;
 }
 
@@ -64,21 +65,18 @@ body {
 }
 
 /* Felt table ------------------------------------------------------------
-   DESKTOP / landscape: PokerNow PC look -- a wide green OVAL with a dark-green
-   rail and a soft lighter-green rim highlight. (Phones override this to a tall
-   rounded-rectangle further down -- see the portrait media query.) */
+   PokerNow desktop look: NOT a solid block -- a thin vector-style oval
+   OUTLINE on the dark room background. (Phones override to a tall rounded
+   rectangle further down -- see the portrait media query.) */
 .felt {
   width: min(1180px, 76vw);
   aspect-ratio: 1.95 / 1;
   max-height: 64vh;
   margin: 0 auto;
-  background: radial-gradient(ellipse at 50% 46%, var(--felt) 0%, var(--felt-mid) 64%, var(--felt-edge) 100%);
-  border: 12px solid #0c0c12;
+  background: transparent;
+  border: 1.5px solid var(--line, #3a3f45);
   border-radius: 50%;                 /* full ellipse on desktop */
-  box-shadow:
-    inset 0 0 0 5px rgba(150, 178, 255, 0.22),   /* light-blue rim highlight */
-    inset 0 0 70px rgba(0, 0, 0, 0.45),
-    0 16px 40px rgba(0, 0, 0, 0.65);
+  box-shadow: none;
   position: relative;
 }
 
@@ -707,7 +705,7 @@ body {
     aspect-ratio: auto;
     max-height: none;
     border-radius: 56px;          /* PokerNow: rounded RECTANGLE, not an oval */
-    border-width: 13px;
+    border-width: 1.5px;          /* thin vector outline, not a thick rail */
   }
   /* Smaller community cards so they clear the side seats (3/4/8/9). */
   #board .card, #board .flip3d { --card-w: clamp(28px, 8vw, 42px); }
@@ -876,13 +874,8 @@ body {
 
 /* ============ Juicy UI polish (interactive / animated) ============ */
 
-/* Felt: soft moving sheen + a brighter center spotlight. */
-.felt::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit;
-  pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(60% 45% at 50% 42%, rgba(255,255,255,0.10), transparent 70%);
-}
+/* Felt: flat vector outline -- no fill, no sheen (PokerNow desktop look). */
+.felt::before { content: none; }
 
 /* Active player: bright animated ring that breathes. */
 .seat.turn .pod {
