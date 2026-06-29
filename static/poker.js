@@ -556,83 +556,95 @@ function renderActionBar() {
   const you = s.you;
   const isBetting = ["preflop", "flop", "turn", "river"].includes(s.phase);
   const myTurn = s.to_act === PP.pid && isBetting;
-  const premoveMode = !myTurn && isBetting && you.in_hand && !you.away &&
-    s.to_act && s.to_act !== PP.pid;
+  const inPlay = you.seated && you.in_hand && !you.away && isBetting;
   const bar = $("actionBar");
-  bar.classList.toggle("hidden", !(myTurn || premoveMode));
-  bar.classList.toggle("premove", premoveMode);
+  // PokerNow-style bar stays visible the whole betting round; only the
+  // FOLD / CALL / RAISE triggers light up on your turn -- otherwise the
+  // auto-action checkboxes (premoves) are the live controls.
+  bar.classList.toggle("hidden", !(myTurn || inPlay));
+  bar.classList.toggle("myturn", myTurn);
+  document.body.classList.toggle("bar-open", myTurn || inPlay);
 
-  const callBtn = bar.querySelector('[data-act="call"]');
-  const checkBtn = bar.querySelector('[data-act="check"]');
-  const foldBtn = bar.querySelector('[data-act="fold"]');
-  const raiseBtn = bar.querySelector('[data-act="raise"]');
-  const all = [callBtn, checkBtn, foldBtn, raiseBtn];
-  all.forEach((b) => { b.classList.remove("armed", "pressed"); b.disabled = false; });
+  renderHeroHand();                       // hole cards + name + stack (left)
 
-  // Whenever it's not our turn (or fresh render) the bet panel resets.
-  if (!myTurn) { $("raisePanel").classList.add("hidden"); $("mainRow").classList.remove("hidden"); }
+  // Checkboxes reflect the queued premove / auto-check-fold.
+  const me = s.players.find((p) => p.id === PP.pid) || {};
+  const callAmt = Math.min(me.stack || 0, Math.max(0, s.current_bet - (me.round_bet || 0)));
+  const facing = callAmt > 0;
+  const pm = you.premove;
+  $("optFoldAny").checked   = pm === "fold";
+  $("optCheckFold").checked = you.auto_check_fold || pm === "checkfold" || pm === "check";
+  $("optCallAny").checked   = pm === "call";
 
-  if (premoveMode) {
+  const fold = $("btnFold"), call = $("btnCall"), raise = $("btnRaise");
+  const callSub = $("callSub"), raiseSub = $("raiseSub");
+
+  if (!myTurn) {
+    // Not my turn: triggers disabled, sizing greyed; checkboxes drive premoves.
     PP.raiseBounds = null;
-    const me = s.players.find((p) => p.id === PP.pid) || {};
-    const callAmt = Math.min(me.stack || 0, Math.max(0, s.current_bet - (me.round_bet || 0)));
-    const facing = callAmt > 0;
-    raiseBtn.classList.add("hidden");                 // no pre-raise
-    foldBtn.classList.remove("hidden"); foldBtn.textContent = "Fold"; foldBtn.dataset.pm = "fold";
-    checkBtn.classList.remove("hidden");
-    checkBtn.textContent = facing ? "Check/Fold" : "Check";
-    checkBtn.dataset.pm = facing ? "checkfold" : "check";
-    callBtn.classList.toggle("hidden", !facing);
-    callBtn.textContent = facing ? `Call ${callAmt}` : "Call";
-    callBtn.dataset.pm = "call";
-    const pm = you.premove;
-    foldBtn.classList.toggle("armed", pm === "fold");
-    checkBtn.classList.toggle("armed", pm === "check" || pm === "checkfold");
-    callBtn.classList.toggle("armed", pm === "call");
+    [fold, call, raise].forEach((b) => { b.disabled = true; b.classList.remove("pressed"); });
+    setLabel(call, facing ? "Check / Call" : "Check");
+    callSub.textContent = facing ? `call ${callAmt}` : "";
+    setLabel(raise, "Bet / Raise"); raiseSub.textContent = "";
+    setSizingDisabled(true);
     updateTimer();
     return;
   }
 
-  if (!myTurn) { PP.raiseBounds = null; return; }
-
-  // My turn: show ALL four buttons, greying out the inapplicable one.
-  all.forEach((b) => b.classList.remove("hidden"));
-  foldBtn.textContent = "Fold (F)";
+  // My turn: everything live.
+  [fold, call, raise].forEach((b) => { b.disabled = false; b.classList.remove("pressed"); });
+  setSizingDisabled(false);
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
-  delete callBtn.dataset.betmin;
-  if (you.can_check) {
-    checkBtn.textContent = "Check (K)"; checkBtn.disabled = false;
-    // Nothing to call -> CALL becomes a quick MIN-BET button (PokerNow style).
-    callBtn.textContent = canRaise ? `Bet ${minTo} (C)` : "Bet";
-    callBtn.disabled = !canRaise;
-    if (canRaise) callBtn.dataset.betmin = String(minTo);
-  } else {
-    checkBtn.textContent = "Check (K)"; checkBtn.disabled = true;
-    callBtn.textContent = you.to_call > 0 ? `Call ${you.to_call} (C)` : "Call (C)";
-    callBtn.disabled = false;
-  }
-  raiseBtn.disabled = !canRaise;
-  raiseBtn.textContent = (you.to_call === 0) ? "Bet (R)" : "Raise (R)";
+
+  if (you.can_check) { setLabel(call, "Check"); callSub.textContent = ""; }
+  else { setLabel(call, "Call"); callSub.textContent = you.to_call > 0 ? `call ${you.to_call}` : ""; }
+  call.disabled = false;
+  setLabel(raise, you.to_call === 0 ? "Bet" : "Raise");
+  raise.disabled = !canRaise;
+
   if (canRaise) {
     const slider = $("raiseSlider"), amount = $("raiseAmount");
-    slider.min = minTo; slider.max = maxRaiseTo;
-    if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) {
-      setRaiseValue(minTo);
-    }
+    slider.min = minTo; slider.max = maxRaiseTo; slider.step = 1;
+    amount.min = minTo; amount.max = maxRaiseTo;
+    if (!amount.value || +amount.value < minTo || +amount.value > maxRaiseTo) setRaiseValue(minTo);
+    else updateBetDisplay();
+  } else {
+    raiseSub.textContent = "";
   }
   updateTimer();
 }
 
-// Update the "Your bet" readout (amount + big-blind multiple) in the panel.
+// Set a trigger button's main label without clobbering its .sub span.
+function setLabel(btn, text) {
+  if (btn.firstChild && btn.firstChild.nodeType === 3) btn.firstChild.nodeValue = text;
+  else btn.insertBefore(document.createTextNode(text), btn.firstChild);
+}
+
+function setSizingDisabled(off) {
+  $("raiseSlider").disabled = off;
+  $("raiseAmount").disabled = off;
+  document.querySelectorAll("#actionBar .qbtn").forEach((b) => { b.disabled = off; });
+}
+
+// Hero hole cards + name + stack shown on the left of the action bar.
+function renderHeroHand() {
+  const s = PP.state;
+  const me = s.players.find((p) => p.id === PP.pid);
+  const cards = $("heroCards");
+  cards.innerHTML = "";
+  ((me && me.hole) || []).forEach((c) => cards.append(cardEl(c)));
+  $("heroName").textContent = (me && me.name) || PP.name || "You";
+  $("heroStack").textContent = me ? me.stack : "";
+}
+
+// Update the raise button's sub-label ("to N" / "all-in") from the input.
 function updateBetDisplay() {
   const v = parseInt($("raiseAmount").value, 10) || 0;
-  const bb = (PP.state && PP.state.settings.big_blind) || 1;
-  const amtEl = $("yourBetAmt"), bbEl = $("yourBetBB");
-  if (amtEl) amtEl.textContent = v;
-  if (bbEl) bbEl.textContent = bb ? `${(v / bb).toFixed(1).replace(/\.0$/, "")} BB` : "";
+  const sub = $("raiseSub"), b = PP.raiseBounds;
+  if (sub) sub.textContent = (b && v >= b.max) ? "all-in" : (v ? `to ${v}` : "");
 }
 PP.updateBetDisplay = updateBetDisplay;
 
@@ -641,11 +653,16 @@ function quickRaiseTo(kind) {
   if (!b) return null;
   const call = you.to_call;
   const potAfterCall = s.pot + call;
+  const bb = (s.settings && s.settings.big_blind) || 1;
   let target;
   if (kind === "min") target = b.min;
-  else if (kind === "allin") target = b.max;
-  else {
-    const frac = kind === "half" ? 0.5 : kind === "twothirds" ? 2 / 3 : 1;
+  else if (kind === "all" || kind === "allin") target = b.max;
+  else if (kind === "2x" || kind === "3x") {
+    // Multiple of the current bet (or BB if nobody has bet yet).
+    const mult = kind === "2x" ? 2 : 3;
+    target = (s.current_bet > 0 ? s.current_bet : bb) * mult;
+  } else {
+    const frac = kind === "half" ? 0.5 : kind === "twothirds" ? 2 / 3 : 1;  // "pot"
     target = s.current_bet + call + Math.round(frac * potAfterCall);
   }
   return Math.max(b.min, Math.min(b.max, target));
@@ -658,29 +675,16 @@ function setRaiseValue(v) {
   if (PP.updateBetDisplay) PP.updateBetDisplay();
 }
 
-// Two-step raise: open the bet panel (presets + slider) in place of the main row.
-function openRaisePanel(focusInput) {
-  const b = PP.raiseBounds;
-  if (!b) return false;
-  setRaiseValue(b.min);                 // always start at the MINIMUM raise
-  $("mainRow").classList.add("hidden");
-  $("raisePanel").classList.remove("hidden");
-  if (focusInput) {
-    const amt = $("raiseAmount");
-    amt.focus(); amt.select();          // R -> amount pre-selected for direct typing
-  }
+// Hotkey 'R': focus + select the bet amount for direct typing.
+function focusRaise() {
+  if (!PP.raiseBounds) return false;
+  const amt = $("raiseAmount");
+  if (amt.disabled) return false;
+  if (!amt.value) setRaiseValue(PP.raiseBounds.min);
+  amt.focus(); amt.select();
   return true;
 }
-function closeRaisePanel() {
-  $("raisePanel").classList.add("hidden");
-  $("mainRow").classList.remove("hidden");
-}
-PP.openRaisePanel = openRaisePanel;
-PP.closeRaisePanel = closeRaisePanel;
-
-function focusRaise() {
-  return openRaisePanel(true);      // hotkey 'R': open the bet panel + select the amount
-}
+PP.focusRaise = focusRaise;
 
 function doFold() {
   const you = PP.state && PP.state.you;
@@ -698,7 +702,6 @@ function submitRaise() {
   setRaiseValue(v);
   $("raiseAmount").blur();
   send({ type: "action", action: "raise", amount: v });
-  closeRaisePanel();
 }
 
 const BUBBLE_MS = 5000;
@@ -797,41 +800,24 @@ function wireCore() {
     catch (e) { prompt("Copy this link:", location.href); }
   };
 
-  document.querySelectorAll("#mainRow .act-btn").forEach((btn) => {
-    btn.onclick = () => {
-      // Pre-move mode: arm/disarm a queued action instead of acting now.
-      if ($("actionBar").classList.contains("premove")) {
-        const mv = btn.dataset.pm || null;
-        if (!mv) return;
-        const cur = PP.state.you.premove;
-        send({ type: "premove", move: (mv === cur) ? null : mv });
-        return;
-      }
-      if (btn.disabled) return;
-      const act = btn.dataset.act;
-      if (act === "raise") { openRaisePanel(true); return; }   // open bet panel + select amount
-      if (act === "call" && btn.dataset.betmin) {          // CALL acting as a min-bet
-        btn.classList.add("pressed");
-        send({ type: "action", action: "raise", amount: +btn.dataset.betmin });
-        return;
-      }
-      btn.classList.add("pressed");                          // flood solid until next state
-      if (act === "fold") { doFold(); return; }
-      send({ type: "action", action: act });
-    };
-  });
-
-  // Raise (bet) panel controls.
-  $("raiseConfirm").onclick = () => submitRaise();
-  $("raiseBack").onclick = () => closeRaisePanel();
-  const stepBy = (d) => {
-    const b = PP.raiseBounds; if (!b) return;
-    const bb = (PP.state && PP.state.settings.big_blind) || 1;
-    let v = (parseInt($("raiseAmount").value, 10) || b.min) + d * bb;
-    setRaiseValue(Math.max(b.min, Math.min(b.max, v)));
+  // Main triggers (single-step: FOLD / CHECK-CALL / BET-RAISE).
+  $("btnFold").onclick = () => {
+    if ($("btnFold").disabled) return;
+    $("btnFold").classList.add("pressed"); doFold();
   };
-  $("raiseMinus").onclick = () => stepBy(-1);
-  $("raisePlus").onclick = () => stepBy(1);
+  $("btnCall").onclick = () => {
+    if ($("btnCall").disabled) return;
+    $("btnCall").classList.add("pressed");
+    const act = PP.state.you.can_check ? "check" : "call";
+    send({ type: "action", action: act });
+  };
+  $("btnRaise").onclick = () => {
+    if ($("btnRaise").disabled) return;
+    $("btnRaise").classList.add("pressed");
+    submitRaise();                       // submit the current slider/input amount
+  };
+
+  // Bet sizing: slider <-> number input stay in sync.
   $("raiseSlider").oninput = () => setRaiseValue(+$("raiseSlider").value);
   $("raiseAmount").oninput = () => {
     $("raiseSlider").value = $("raiseAmount").value;
@@ -841,13 +827,22 @@ function wireCore() {
     if (e.key === "Enter") { e.preventDefault(); submitRaise(); }
   });
 
-  document.querySelectorAll(".quick").forEach((btn) => {
+  // Quick-size buttons (Min / 2x / 3x / Pot / All-In).
+  document.querySelectorAll("#actionBar .qbtn").forEach((btn) => {
     btn.onclick = () => {
-      const v = quickRaiseTo(btn.dataset.quick);
+      const v = quickRaiseTo(btn.dataset.q);
       if (v == null) return;
-      setRaiseValue(v);          // set the amount; confirm with the RAISE button
+      setRaiseValue(v);          // set the amount; confirm with the BET/RAISE button
     };
   });
+
+  // Auto-action checkboxes -> premove / auto-check-fold (PokerNow style).
+  $("optFoldAny").onchange = (e) =>
+    send({ type: "premove", move: e.target.checked ? "fold" : null });
+  $("optCallAny").onchange = (e) =>
+    send({ type: "premove", move: e.target.checked ? "call" : null });
+  $("optCheckFold").onchange = (e) =>
+    send({ type: "auto_check_fold", value: e.target.checked });
 
   $("felt").addEventListener("click", (e) => {
     const sit = e.target.closest("[data-sit-seat]");

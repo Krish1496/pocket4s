@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=71" />
+  <link rel="stylesheet" href="/static/style.css?v=72" />
 </head>
 <body class="min-h-screen text-slate-50">
 
@@ -162,39 +162,42 @@
       <!-- Run-it-twice vote bar -->
       <div id="runVoteBar" class="runvote-bar hidden"></div>
 
-      <!-- Action bar -->
-      <div id="actionBar" class="action-bar hidden">
+      <!-- Action bar (PokerNow-style full-width bottom dock, matches demo) -->
+      <div id="actionBar" class="actionbar hidden">
         <div id="timerWrap" class="timer-wrap hidden"><div id="timerBar" class="timer-bar"></div></div>
-        <!-- Main action row (CALL / RAISE / CHECK / FOLD -- PokerNow order). -->
-        <div class="main-row" id="mainRow">
-          <button data-act="call" class="act-btn act-call">Call</button>
-          <button data-act="raise" class="act-btn act-raise">Raise</button>
-          <button data-act="check" class="act-btn act-check">Check</button>
-          <button data-act="fold" class="act-btn act-fold">Fold</button>
-        </div>
-        <!-- Raise panel: hidden until RAISE is tapped (two-step, PokerNow style). -->
-        <div id="raisePanel" class="raise-panel hidden">
-          <div class="yourbet-row">
-            <span class="yourbet-label">Your bet</span>
-            <span class="yourbet-amt" id="yourBetAmt">0</span>
-            <span class="yourbet-bb" id="yourBetBB"></span>
+        <div class="ab-inner">
+          <!-- Hero hole cards + name/stack -->
+          <div class="hero-hand">
+            <div id="heroCards" class="hero-cards"></div>
+            <div class="hero-meta">
+              <span class="hname" id="heroName">You</span>
+              <span class="hstack" id="heroStack">0</span>
+            </div>
           </div>
-          <div class="quick-row">
-            <button class="quick" data-quick="min">Min Raise</button>
-            <button class="quick" data-quick="half">&frac12; Pot</button>
-            <button class="quick" data-quick="twothirds">&frac34; Pot</button>
-            <button class="quick" data-quick="pot">Pot</button>
-            <button class="quick" data-quick="allin">All in</button>
+          <!-- Auto-action checkboxes + bet sizing -->
+          <div class="controls">
+            <div class="opts">
+              <label class="opt"><input type="checkbox" id="optFoldAny" /> Fold to any bet</label>
+              <label class="opt"><input type="checkbox" id="optCheckFold" /> Check / Fold</label>
+              <label class="opt"><input type="checkbox" id="optCallAny" /> Call any</label>
+            </div>
+            <div class="row">
+              <div class="sizing">
+                <button class="qbtn" data-q="min">Min</button>
+                <button class="qbtn" data-q="2x">2x</button>
+                <button class="qbtn" data-q="3x">3x</button>
+                <button class="qbtn" data-q="pot">Pot</button>
+                <button class="qbtn" data-q="all">All-In</button>
+                <input id="raiseSlider" type="range" class="slider" />
+                <input id="raiseAmount" type="number" class="bet-input" />
+              </div>
+            </div>
           </div>
-          <div class="raise-row">
-            <button class="step" id="raiseMinus" aria-label="Decrease bet">&minus;</button>
-            <input id="raiseSlider" type="range" class="flex-1 accent-emerald-400" />
-            <button class="step" id="raisePlus" aria-label="Increase bet">+</button>
-            <input id="raiseAmount" type="number" class="raise-amount" />
-          </div>
-          <div class="confirm-row">
-            <button id="raiseBack" class="act-btn act-back">Back</button>
-            <button id="raiseConfirm" class="act-btn act-raise">Raise</button>
+          <!-- Main action triggers -->
+          <div class="triggers">
+            <button class="btn fold" id="btnFold" data-act="fold">Fold</button>
+            <button class="btn call" id="btnCall" data-act="call">Check / Call<span class="sub" id="callSub"></span></button>
+            <button class="btn raise" id="btnRaise" data-act="raise">Bet / Raise<span class="sub" id="raiseSub"></span></button>
           </div>
         </div>
       </div>
@@ -244,10 +247,10 @@
 
   <!-- (Voice toggle moved into the bottom-left dock; mic on each pod shows who's talking.) -->
 
-  <script src="/static/sfx.js?v=71"></script>
-  <script src="/static/fx.js?v=71"></script>
-  <script src="/static/poker.js?v=71"></script>
-  <script src="/static/panels.js?v=71"></script>
-  <script src="/static/voice.js?v=71"></script>
+  <script src="/static/sfx.js?v=72"></script>
+  <script src="/static/fx.js?v=72"></script>
+  <script src="/static/poker.js?v=72"></script>
+  <script src="/static/panels.js?v=72"></script>
+  <script src="/static/voice.js?v=72"></script>
 </body>
 </html>

@@ -993,3 +993,108 @@ header.border-b { border-color: var(--line-soft) !important; }
 #requestsList .bg-emerald-500 { background: var(--accent-call) !important; color: #08142b !important; }
 
 /* Connection status dot uses semantic colors -- leave green/amber/red as-is. */
+
+/* ============ PokerNow-style bottom ACTION BAR (matches demo) ============ */
+.actionbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+  background: var(--bg-2); border-top: 1px solid var(--line-soft);
+  padding: 12px 18px;
+}
+.actionbar.hidden { display: none; }
+.actionbar .ab-inner {
+  display: flex; align-items: center; gap: 22px;
+  max-width: 1500px; margin: 0 auto;
+}
+/* Hero hole cards + name/stack (left) */
+.actionbar .hero-hand { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
+.actionbar .hero-cards { display: flex; gap: 6px; }
+.actionbar .hero-cards .card { --card-w: 46px; }
+.actionbar .hero-meta { display: flex; flex-direction: column; gap: 2px; }
+.actionbar .hero-meta .hname  { font-size: 13px; font-weight: 600; color: var(--txt); }
+.actionbar .hero-meta .hstack { font-size: 12px; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+
+/* Checkboxes + bet sizing (center) */
+.actionbar .controls { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.actionbar .opts { display: flex; gap: 18px; flex-wrap: wrap; }
+.actionbar .opt {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--txt-dim); user-select: none; cursor: pointer;
+}
+.actionbar .opt input { accent-color: var(--accent-call); width: 13px; height: 13px; }
+.actionbar .row { display: flex; align-items: center; gap: 12px; }
+.actionbar .sizing { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.actionbar .qbtn {
+  font-size: 11px; font-weight: 600; color: var(--txt-dim);
+  background: transparent; border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 9px; letter-spacing: 0.2px; flex: 0 0 auto;
+}
+.actionbar .qbtn:hover:not(:disabled) { color: var(--txt); border-color: var(--accent-call); }
+.actionbar .qbtn:disabled { opacity: 0.4; cursor: default; }
+.actionbar .bet-input {
+  width: 92px; background: var(--bg); border: 1px solid var(--line); color: var(--txt);
+  border-radius: 4px; padding: 6px 9px; font-size: 13px; text-align: right;
+  font-variant-numeric: tabular-nums; outline: none; flex: 0 0 auto;
+}
+.actionbar .bet-input:focus { border-color: var(--accent-call); }
+.actionbar .bet-input:disabled { opacity: 0.4; }
+/* precise range slider */
+.actionbar .slider {
+  -webkit-appearance: none; appearance: none; flex: 1; height: 2px;
+  background: var(--line); border-radius: 2px; outline: none; min-width: 100px;
+}
+.actionbar .slider:disabled { opacity: 0.4; }
+.actionbar .slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent-call); border: 2px solid var(--bg-2); cursor: pointer;
+}
+.actionbar .slider::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent-call); border: 2px solid var(--bg-2); cursor: pointer;
+}
+
+/* Main triggers (right) */
+.actionbar .triggers { display: flex; gap: 10px; flex: 0 0 auto; }
+.actionbar .triggers .btn {
+  border: 1px solid; border-radius: 5px; padding: 12px 22px;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.4px;
+  background: transparent; text-transform: uppercase; min-width: 116px;
+}
+.actionbar .btn.fold  { color: var(--accent-fold);  border-color: var(--accent-fold); }
+.actionbar .btn.call  { color: var(--accent-call);  border-color: var(--accent-call); }
+.actionbar .btn.raise { color: #16191c; background: var(--accent-bet); border-color: var(--accent-bet); }
+.actionbar .btn.fold:hover:not(:disabled)  { background: rgba(179,84,84,0.14); }
+.actionbar .btn.call:hover:not(:disabled)  { background: rgba(79,140,255,0.14); }
+.actionbar .btn.raise:hover:not(:disabled) { filter: brightness(1.06); }
+.actionbar .btn.fold.pressed  { background: var(--accent-fold); color: #fff; }
+.actionbar .btn.call.pressed  { background: var(--accent-call); color: #08142b; }
+.actionbar .btn.raise.pressed { filter: brightness(0.9); }
+.actionbar .btn:disabled { opacity: 0.35; cursor: default; }
+.actionbar .btn .sub { display: block; font-size: 10px; font-weight: 500; opacity: 0.75; letter-spacing: 0; }
+
+/* Action timer hairline along the very top edge of the bar. */
+.actionbar .timer-wrap {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: transparent; border-radius: 0;
+}
+.actionbar .timer-wrap.hidden { display: none; }
+.actionbar .timer-bar { height: 100%; }
+
+/* Mobile: stack the three sections like the demo. */
+@media (max-width: 760px) {
+  .actionbar { padding: 10px 12px; }
+  .actionbar .ab-inner { flex-direction: column; align-items: stretch; gap: 10px; }
+  .actionbar .hero-hand { justify-content: center; }
+  .actionbar .opts { justify-content: center; gap: 12px; }
+  .actionbar .triggers .btn { flex: 1; min-width: 0; padding: 12px 6px; }
+  .actionbar .qbtn { padding: 6px 7px; }
+}
+
+/* When the bottom action bar is open, lift the chat dock above it and give
+   the table some bottom clearance so nothing hides behind the bar. */
+body.bar-open .bottom-dock { bottom: 96px; }
+body.bar-open main { padding-bottom: 96px; }
+@media (max-width: 760px) {
+  body.bar-open .bottom-dock { bottom: 180px; }
+  body.bar-open main { padding-bottom: 200px; }
+}

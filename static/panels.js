@@ -464,27 +464,15 @@
       }
       if (key === "h") { e.preventDefault(); tryRabbit(); return; }
       const bar = $("actionBar");
-      if (bar.classList.contains("hidden")) {
-        const pmBar = $("premoveBar");
-        if (pmBar && !pmBar.classList.contains("hidden")) {
-          const pm = (mv) => {
-            const b = pmBar.querySelector('.pm[data-pm="' + mv + '"]');
-            if (b) { e.preventDefault(); b.click(); }
-          };
-          if (key === "c") pm("call");
-          else if (key === "k") pm("check");
-          else if (key === "x") pm("checkfold");
-        }
-        return;
-      }
+      if (bar.classList.contains("hidden")) return;
       const fire = (sel) => {
         const b = bar.querySelector(sel);
-        if (b && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
+        if (b && !b.disabled && !b.classList.contains("hidden")) { e.preventDefault(); b.click(); }
       };
-      if (key === "c") fire('[data-act="call"]');
-      else if (key === "k") fire('[data-act="check"]');
+      // C or K -> the combined Check/Call button; F -> Fold; R -> focus bet.
+      if (key === "c" || key === "k") fire('#btnCall');
       else if (key === "r") { e.preventDefault(); focusRaise(); }
-      else if (key === "f") fire('[data-act="fold"]');
+      else if (key === "f") fire('#btnFold');
     });
   };
 
