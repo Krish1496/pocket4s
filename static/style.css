@@ -1189,3 +1189,82 @@ body.bar-open main { padding-bottom: 130px; }
 .req-popup-btns .req-no  { background: var(--accent-fold); color: #fff; }
 .req-popup-btns button:hover { filter: brightness(1.08); }
 @media (max-width: 760px) { .req-popup { top: auto; bottom: 12px; right: 10px; } }
+
+/* ============================================================================
+   MOBILE LAYOUT REFACTOR  (<=760px)
+   Clean bottom-anchored vertical stack, no overlaps, single hole-card render.
+   Visual flow, bottom of screen upward:
+     [felt + hero seat: name/avatar with hole cards on top]
+     [action bar: checkboxes + bet slider, then RAISE/CALL/CHECK/FOLD]
+     [utility bar: Chat | Log | Ledger | Voice]  (pinned to the very bottom)
+   ============================================================================ */
+@media (max-width: 760px) {
+  /* 1. DUPLICATE HOLE CARDS -> the hero's cards already render once on the felt
+     seat (above the name). Drop the action-bar copy entirely. */
+  .actionbar .hero-hand { display: none !important; }
+
+  /* 2/4. ACTION BAR: full-width, stacked, sits ABOVE the utility bar (z-40). */
+  .actionbar {
+    left: 0; right: 0; bottom: 46px;            /* 46px = utility bar height */
+    z-index: 40;
+    padding: 10px 12px;
+    box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.5);
+  }
+  .actionbar .ab-inner {
+    flex-direction: column; align-items: stretch; gap: 10px;
+    max-width: 100%;
+  }
+  .actionbar .opts { justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .actionbar .sizing { gap: 6px; flex-wrap: wrap; }
+  .actionbar .triggers { gap: 8px; }
+  .actionbar .triggers .btn { flex: 1; min-width: 0; padding: 12px 4px; }
+
+  /* 2/4. UTILITY BAR: the dock becomes a single full-width bar pinned to the
+     very bottom of the viewport (never floating over the cards/controls). */
+  .bottom-dock {
+    left: 0; right: 0; bottom: 0; width: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    z-index: 41;
+  }
+  .bottom-dock .dock-btns {
+    justify-content: center; gap: 8px;
+    background: var(--bg-2); border-top: 1px solid var(--line-soft);
+    padding: 7px 8px; min-height: 46px; align-items: center;
+  }
+  .bottom-dock .dock-btns .btn-muted {
+    background: transparent; box-shadow: none;
+    padding: 0.3rem 0.55rem; font-size: 0.74rem;
+  }
+  /* Mini chat (when toggled) floats above BOTH bars, never overlapping them. */
+  #miniChat.open {
+    position: fixed; left: 0; right: 0; bottom: 46px; width: 100%; max-width: none;
+    border-radius: 0; z-index: 42;
+  }
+  body.bar-open #miniChat.open { bottom: auto; }   /* keep usable when bar is open */
+
+  /* Utility bar STAYS at the very bottom even while the action bar is open
+     (overrides the earlier lift-the-dock rule). */
+  body.bar-open .bottom-dock { bottom: 0; }
+
+  /* 4. Reserve bottom space so the felt/hero seat never hide behind the bars.
+     Idle: utility bar + hero-seat showdown tags. In-hand: + the action bar. */
+  main { padding-bottom: 104px !important; }
+  body.bar-open main { padding-bottom: 232px !important; }
+
+  /* 3. SHOWDOWN OVERFLOW: keep the win (+N) and hand-rank (K) tags from
+     clipping into the bars -- they're allowed to paint outside the pod, and
+     the felt gets a little bottom breathing room. */
+  .seat .hand-name, .seat .win-pct { overflow: visible; }
+  .felt { margin-bottom: 10px; }
+
+  /* Showdown panels lift above the utility bar so they don't collide with it. */
+  .show-cards { bottom: 56px; right: 10px; }
+  .req-popup  { top: auto; bottom: 56px; right: 10px; }
+}
+
+/* Portrait: shrink the felt a touch so the table + the bottom stack both fit
+   without the page having to scroll on typical phone heights. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .felt { height: min(56dvh, 142vw); }
+  body.bar-open .felt { height: min(48dvh, 132vw); }
+}
