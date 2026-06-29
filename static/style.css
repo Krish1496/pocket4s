@@ -114,7 +114,12 @@ body {
 }
 .seat.turn .name { color: #1a1a1a; }
 .seat.turn .stack { color: #1a1a1a; }
-.seat.folded { opacity: 0.45; }
+/* Folded seat: dim the pod + face-down cards, but a voluntarily-SHOWN card
+   (visible to everyone) stays full opacity. (Can't use whole-seat opacity --
+   a child can't be more opaque than its parent.) */
+.seat.folded .pod { opacity: 0.45; }
+.seat.folded .cards > * { opacity: 0.45; }
+.seat.folded .cards > *.shown-card { opacity: 1; }
 .seat .name { font-size: 15px; font-weight: 800; color: #f4f4f4; line-height: 1.15; }
 .seat .stack { font-size: 14px; color: #e8e8e8; font-weight: 600; }
 /* Purple-to-lime timer bar along the bottom of the active (white) pod. */
@@ -1145,3 +1150,7 @@ body.bar-open main { padding-bottom: 130px; }
   .show-cards .btn { padding: 10px 12px; font-size: 12px; }
   .show-cards .show-row .btn { min-width: 0; }
 }
+
+/* Rabbit-hunt cards shown IN the board row (the would-be runout), dimmed so
+   they read as "what would have come" rather than real community cards. */
+#board .rabbit-card { opacity: 0.5; }

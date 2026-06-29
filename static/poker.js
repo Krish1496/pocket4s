@@ -247,7 +247,11 @@ function renderBoard() {
   if (s.run_count > 1) {
     renderStackedBoard(board, s);
   } else {
-    // Normal single board: flip in the freshly-dealt street(s).
+    // Normal single board: flip in the freshly-dealt street(s). Empty slots
+    // are filled by RABBIT cards (the would-be runout) when revealed -- shown
+    // dimmed, right in the board row (never below it).
+    const rabbit = s.rabbit || [];
+    const baseLen = s.board.length;
     for (let i = 0; i < 5; i++) {
       if (s.board[i]) {
         if (i >= PP.anim.boardFrom) {
@@ -258,14 +262,18 @@ function renderBoard() {
         } else {
           board.append(cardEl(s.board[i]));
         }
+      } else if (rabbit[i - baseLen]) {
+        const rc = cardEl(rabbit[i - baseLen]);
+        rc.classList.add("rabbit-card");        // dimmed -> "would have been"
+        board.append(rc);
       } else {
         board.append(placeholderCard());
       }
     }
   }
+  // Rabbit cards now live in the board row above; keep this legacy row empty.
   const rabbit = $("rabbitRow");
-  rabbit.innerHTML = "";
-  (s.rabbit || []).forEach((c) => rabbit.append(cardEl(c, true)));
+  if (rabbit) rabbit.innerHTML = "";
 }
 
 // Run-it-twice layout: the shared flop stays on one row; each run's NEW
@@ -436,14 +444,20 @@ function seatEl(p, xPct, yPct) {
 
   const cards = document.createElement("div");
   cards.className = "cards";
+  const shownIdx = p.shown || [];
   (p.hole || []).forEach((c, i) => {
+    let el;
     if (PP.anim.dealHoles && c !== "back") {
-      cards.append(flipCardEl(c, true, i * 0.08));
+      el = flipCardEl(c, true, i * 0.08);
     } else if (PP.anim.flipReveal && p.id !== PP.pid && c !== "back") {
-      cards.append(flipCardEl(c, true, i * 0.1));
+      el = flipCardEl(c, true, i * 0.1);
     } else {
-      cards.append(cardEl(c, true));
+      el = cardEl(c, true);
     }
+    // A voluntarily-shown card is visible to everyone -> keep it FULL opacity
+    // even when the seat is folded/ghosted.
+    if (shownIdx.includes(i) && c !== "back") el.classList.add("shown-card");
+    cards.append(el);
   });
 
   const pod = document.createElement("div");
