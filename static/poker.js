@@ -591,13 +591,13 @@ function renderActionBar() {
     return;
   }
 
-  // My turn: everything live.
+  // My turn: triggers live; sizing is live only when a raise is legal.
   [fold, call, raise].forEach((b) => { b.disabled = false; b.classList.remove("pressed"); });
-  setSizingDisabled(false);
   const minTo = Math.max(you.min_raise_to, s.current_bet + 1);
   const maxRaiseTo = (s.current_bet - you.to_call) + you.stack;
   const canRaise = minTo <= maxRaiseTo;
   PP.raiseBounds = canRaise ? { min: minTo, max: maxRaiseTo } : null;
+  setSizingDisabled(!canRaise);
 
   if (you.can_check) { setLabel(call, "Check"); callSub.textContent = ""; }
   else { setLabel(call, "Call"); callSub.textContent = you.to_call > 0 ? `call ${you.to_call}` : ""; }

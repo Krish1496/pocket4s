@@ -181,9 +181,10 @@ body {
 .seat .cards > *:last-child  { transform: rotate(9deg);  z-index: 2; }
 .seat .cards > *:only-child  { transform: none; margin-right: 0; }
 
-/* Tuck the cards' lower half behind the name pod (only when cards exist). */
+/* Cards sit fully ABOVE the name pod with a small gap (no tuck) so every
+   player's revealed cards are completely visible at showdown. */
 .seat .cards:not(:empty) + .pod {
-  margin-top: -28px;
+  margin-top: 8px;
 }
 
 .disconnected-dot {
@@ -686,7 +687,7 @@ body {
   .seat .stack { font-size: clamp(10px, 3.1vw, 14px); }
   .seat .cards { gap: 0; margin-bottom: 0; min-height: calc(clamp(26px, 7.8vw, 40px) * 1.42); }
   .seat .cards > *:first-child { margin-right: -10px; }
-  .seat .cards:not(:empty) + .pod { margin-top: calc(clamp(26px, 7.8vw, 40px) * 1.42 * -0.36); }
+  .seat .cards:not(:empty) + .pod { margin-top: 6px; }
   .seat .badge { width: 20px; height: 20px; font-size: 10px; }
   .seat-timer { width: 20px; height: 20px; font-size: 10px; }
   main { padding-left: 0.4rem; padding-right: 0.4rem; padding-top: 0.4rem; }
@@ -865,7 +866,7 @@ body {
 @media (min-width: 701px) {
   .seat.zone-top { display: flex; flex-direction: column-reverse; align-items: center; }
   .seat.zone-top .cards:not(:empty) + .pod { margin-top: 0; }
-  .seat.zone-top .cards { margin-top: -28px; }
+  .seat.zone-top .cards { margin-top: 8px; }
 
   .seat.zone-left, .seat.zone-right {
     display: flex; align-items: center; width: auto;
@@ -875,8 +876,8 @@ body {
   .seat.zone-left .cards, .seat.zone-right .cards { min-height: 0; }
   .seat.zone-left  .cards:not(:empty) + .pod,
   .seat.zone-right .cards:not(:empty) + .pod { margin-top: 0; }
-  .seat.zone-left  .cards { margin-left: -22px; }     /* overlap the pod edge */
-  .seat.zone-right .cards { margin-right: -22px; }
+  .seat.zone-left  .cards { margin-left: 8px; }      /* gap from the pod, no overlap */
+  .seat.zone-right .cards { margin-right: 8px; }
 }
 
 /* Mobile: mini chat is hidden until the Chat button is tapped. ---------- */
@@ -1092,9 +1093,9 @@ header.border-b { border-color: var(--line-soft) !important; }
 
 /* When the bottom action bar is open, lift the chat dock above it and give
    the table some bottom clearance so nothing hides behind the bar. */
-body.bar-open .bottom-dock { bottom: 96px; }
-body.bar-open main { padding-bottom: 96px; }
+body.bar-open .bottom-dock { bottom: 110px; }
+body.bar-open main { padding-bottom: 130px; }
 @media (max-width: 760px) {
-  body.bar-open .bottom-dock { bottom: 180px; }
-  body.bar-open main { padding-bottom: 200px; }
+  body.bar-open .bottom-dock { bottom: 190px; }
+  body.bar-open main { padding-bottom: 210px; }
 }
