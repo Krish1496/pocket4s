@@ -1,22 +1,20 @@
 :root {
-  /* Flat minimalist theme (dark, 2D, flat green felt). */
-  --bg: #1a1d20;
-  --bg-2: #14171a;
-  --felt: #1b834b;          /* flat untextured green */
-  --felt-rim: #0c0e10;
+  /* Flat prototype theme (dark charcoal, thin vector outline table). */
+  --bg: #121416;
+  --bg-2: #1a1d20;
   --line: #3a3f45;
   --line-soft: #2a2e33;
-  --pod: #111315;           /* solid black-slate seat box */
-  --pod-line: #2b3035;
-  --pod-active: #111315;
-  --chip: #23272c;
+  --pod: #1e2227;           /* seat name/stack box */
+  --pod-line: #353a40;
+  --pod-active: #1e2227;
+  --chip: #23272c;          /* avatar + bet tag bg */
   --dealer: #ffffff;
-  --pot-pill: rgba(0, 0, 0, 0.4);
+  --pot-pill: #23272c;
   --txt: #e6e8ea;
   --txt-dim: #9aa0a6;
   --txt-faint: #6b7178;
-  --card-red: #dc3545;
-  --card-black: #000000;
+  --card-red: #d83a3a;
+  --card-black: #16191c;
   --accent-bet: #e3b341;
   --accent-call: #4f8cff;
   --accent-fold: #b35454;
@@ -60,8 +58,8 @@ body {
 .card.red { color: var(--card-red); }
 .card.black { color: var(--card-black); }
 .card.back {
-  background: #e88f8f;            /* flat salmon-pink back */
-  border: 1px solid #ffffff;
+  background: #2b3038;            /* flat slate back, no pattern */
+  border: 1px solid #3a4049;
 }
 .card.small { --card-w: 46px; }   /* height + fonts follow automatically */
 .card.placeholder {
@@ -70,16 +68,16 @@ body {
   box-shadow: none;
 }
 
-/* Felt table -- flat untextured green oval with a thin charcoal rim. */
+/* Felt table -- thin vector outline oval on the dark canvas (prototype look). */
 .felt {
   width: min(1180px, 76vw);
   aspect-ratio: 1.95 / 1;
   max-height: 64vh;
   margin: 0 auto;
-  background: var(--felt);
-  border: 1px solid var(--felt-rim);
+  background: transparent;
+  border: 1.5px solid var(--line);
   border-radius: 50%;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  box-shadow: none;
   position: relative;
 }
 
@@ -92,14 +90,18 @@ body {
 }
 .seat .pod {
   background: var(--pod);
-  border: none;
-  border-radius: 12px;
-  padding: 7px 10px;
+  border: 1px solid var(--pod-line);
+  border-radius: 4px;
+  padding: 5px 8px;
   text-align: left;
   position: relative;
   z-index: 2;            /* paints OVER the tilted card bottoms */
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
+.seat .pod-text { display: flex; flex-direction: column; min-width: 0; }
 .seat.you .pod { background: var(--pod); }
 .seat.turn .pod {
   background: var(--pod-active);
@@ -880,43 +882,52 @@ body {
 /* Run-it-twice vote countdown. */
 .rv-clock { color: #fca5a5; font-weight: 800; margin-left: 6px; }
 
-/* ============ Flat minimalist overrides ============ */
+/* ============ Flat prototype overrides ============ */
 
 .felt::before { content: none; }   /* outline only, no fill/sheen */
 
-/* Active player: razor-sharp WHITE outline + a green tick line at the bottom. */
+/* Active player: blue outline (prototype look). */
 .seat.turn .pod {
   background: var(--pod);
-  border-color: #ffffff !important;
-  box-shadow: 0 0 0 1px #ffffff !important;
+  border-color: var(--accent-call) !important;
+  box-shadow: none !important;
 }
 .seat.turn .name, .seat.turn .stack { color: var(--txt) !important; }
-.pod-timer { background: rgba(255, 255, 255, 0.12); }
-.pod-timer-fill { background: #2bd66a !important; }   /* bright green tick */
+.seat.turn .avatar { border-color: var(--accent-call); color: var(--txt); }
+.pod-timer { background: rgba(255, 255, 255, 0.10); }
+.pod-timer-fill { background: var(--accent-call) !important; }   /* blue action clock */
 
-/* Pot capsule: semi-transparent black pill, bold white. */
+/* Pot tag: flat container. */
 .pot-label {
   background: var(--pot-pill);
   background-image: none;
-  border: none;
+  border: 1px solid var(--line-soft);
   box-shadow: none;
-  font-weight: 800;
-  color: #ffffff;
+  font-weight: 700;
+  color: var(--txt);
 }
 .pot-label.bump { animation: none; }
 
-/* Bet value: standalone WHITE text, no box (positioned toward center in JS). */
+/* Bet value: small boxed tag pushed toward center (prototype look). */
 .seat .bet-chip {
-  background: transparent;
-  color: #ffffff;
-  border: none;
-  border-radius: 0;
+  background: var(--chip);
+  color: var(--txt);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
   box-shadow: none;
-  font-weight: 800;
-  font-size: 13px;
-  padding: 0;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 1px 6px;
+  text-shadow: none;
   animation: none;
+}
+
+/* Seat avatar: initial badge circle next to the pod (prototype look). */
+.seat .avatar {
+  width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
+  background: var(--chip); border: 1px solid var(--pod-line);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  color: var(--txt-dim);
 }
 
 /* Action buttons: flat blocks, no transforms/shadows. */

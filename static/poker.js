@@ -449,9 +449,13 @@ function seatEl(p, xPct, yPct) {
   const topup = p.pending_topup ? ` <span class="text-emerald-400">(+${p.pending_topup})</span>` : "";
   const awayTag = p.away ? ' <span class="away-tag">AWAY</span>' : "";
   const winPlus = winAmount != null ? ` <span class="win-plus">+${winAmount}</span>` : "";
+  const initial = (p.name || "?").trim().charAt(0).toUpperCase() || "?";
   pod.innerHTML =
+    `<div class="avatar">${escapeHtml(initial)}</div>` +
+    `<div class="pod-text">` +
     `<div class="name">${escapeHtml(p.name)}${crown}${disc}${awayTag}</div>` +
-    `<div class="stack">${p.stack}${topup}${winPlus}</div>`;
+    `<div class="stack">${p.stack}${topup}${winPlus}</div>` +
+    `</div>`;
   if (p.is_button) {
     const b = document.createElement("div");
     b.className = "badge";
