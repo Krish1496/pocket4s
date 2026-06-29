@@ -77,8 +77,8 @@ body {
 .felt {
   width: min(1180px, 80vw);
   aspect-ratio: 2.1 / 1;
-  max-height: 62vh;
-  margin: 0 auto;
+  max-height: 58vh;
+  margin: 92px auto 0;            /* top gap so the TOP-row seats clear the header */
   background: transparent;
   border: 1.5px solid var(--line);
   border-radius: 9999px;
@@ -687,7 +687,7 @@ body {
   :root { --card-w: clamp(38px, 11vw, 54px); }
   .card.small { --card-w: clamp(26px, 7.8vw, 40px); }
   .flip3d.small { --card-w: clamp(26px, 7.8vw, 40px); }
-  .felt { border-width: 9px; }
+  .felt { border-width: 9px; margin-top: 60px; }
   .seat { width: clamp(56px, 17.5vw, 82px); }
   .seat .pod { padding: 4px 5px; border-radius: 10px; }
   .seat .name { font-size: clamp(11px, 3.4vw, 15px); }
@@ -726,6 +726,7 @@ body {
     height: min(67dvh, 150vw);    /* bigger board, leaves room for action bar */
     aspect-ratio: auto;
     max-height: none;
+    margin: 18px auto 0;          /* small top gap (portrait top seat sits inside) */
     border-radius: 56px;          /* PokerNow: rounded RECTANGLE, not an oval */
     border-width: 1.5px;          /* thin vector outline, not a thick rail */
   }

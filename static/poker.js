@@ -527,9 +527,13 @@ function seatEl(p, xPct, yPct) {
     const bet = document.createElement("div");
     bet.className = "bet-chip";
     bet.textContent = "Bet: " + p.round_bet;
-    // Push the chip from the pod TOWARD the table center (where the pot sits).
+    // Push the chip from the seat TOWARD the pot, far enough to clear the
+    // player's hole cards and land on open felt. Scaled to the table size so
+    // it works on any screen.
+    const felt = $("felt");
+    const fw = felt.clientWidth || 900, fh = felt.clientHeight || 430;
     const ang = Math.atan2(50 - yPct, 50 - xPct);
-    const dx = Math.cos(ang) * 78, dy = Math.sin(ang) * 60;
+    const dx = Math.cos(ang) * fw * 0.13, dy = Math.sin(ang) * fh * 0.24;
     bet.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
     wrap.append(bet);
   }
