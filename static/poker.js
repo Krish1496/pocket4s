@@ -223,6 +223,7 @@ function computeAnims(s) {
       }));
   }
   PP.anim = a;
+  if (a.flipReveal && Object.keys(a.winners).length && window.PPFX) PPFX.confetti();
   if (window.PPSFX) {
     if (a.dealHoles) PPSFX.play("deal");          // board flips play per-card in renderBoard
     if (a.flipReveal) PPSFX.play("win");

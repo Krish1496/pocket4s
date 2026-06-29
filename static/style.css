@@ -873,3 +873,75 @@ body {
 
 /* Run-it-twice vote countdown. */
 .rv-clock { color: #fca5a5; font-weight: 800; margin-left: 6px; }
+
+/* ============ Juicy UI polish (interactive / animated) ============ */
+
+/* Felt: soft moving sheen + a brighter center spotlight. */
+.felt::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(60% 45% at 50% 42%, rgba(255,255,255,0.10), transparent 70%);
+}
+
+/* Active player: bright animated ring that breathes. */
+.seat.turn .pod {
+  animation: turn-breathe 1.6s ease-in-out infinite;
+}
+@keyframes turn-breathe {
+  0%,100% { box-shadow: 0 0 0 2px rgba(96,165,250,0.55), 0 4px 14px rgba(0,0,0,0.55); }
+  50%     { box-shadow: 0 0 0 4px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.7), 0 4px 14px rgba(0,0,0,0.55); }
+}
+
+/* Pot pill: gentle pulse + sheen, and a pop when it grows. */
+.pot-label {
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0));
+  transition: transform 0.15s ease;
+}
+.pot-label.bump { animation: pot-pop 0.4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes pot-pop { 0%{transform:scale(1);} 40%{transform:scale(1.22);} 100%{transform:scale(1);} }
+
+/* Bet chips: glossy poker-chip look with a dashed rim + drop on appear. */
+.seat .bet-chip {
+  background:
+    radial-gradient(circle at 50% 35%, #eef58a 0%, var(--chip) 55%, #b9c93f 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35),
+              inset 0 0 0 4px rgba(0,0,0,0.12),
+              0 3px 8px rgba(0,0,0,0.55);
+}
+
+/* Action buttons: springy hover + press feedback. */
+.act-btn { transition: transform .08s ease, box-shadow .15s ease, background .15s ease, color .15s ease; }
+.act-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.45); }
+.act-btn:not(:disabled):active { transform: translateY(0) scale(0.97); }
+
+/* Header / dock buttons: subtle lift. */
+.btn-muted, .btn-primary { transition: transform .08s ease, box-shadow .15s ease, filter .15s ease; }
+.btn-muted:hover, .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.12); }
+.btn-muted:active, .btn-primary:active { transform: translateY(0) scale(0.97); }
+
+/* Hero hole cards: gentle hover lift on desktop. */
+@media (min-width: 701px) {
+  .seat.you .cards > * { transition: transform .12s ease; }
+  .seat.you:hover .cards > *:first-child { transform: rotate(-9deg) translateY(-5px); }
+  .seat.you:hover .cards > *:last-child  { transform: rotate(9deg) translateY(-5px); }
+}
+
+/* Winner: richer golden glow + a little bounce. */
+.seat.winner .pod {
+  animation: winner-pop 0.5s cubic-bezier(.34,1.56,.64,1), winner-glow 1s ease-in-out 0.5s infinite !important;
+}
+@keyframes winner-pop { 0%{transform:scale(1);} 45%{transform:scale(1.14);} 100%{transform:scale(1);} }
+
+/* Dealer button: shiny disc. */
+.seat .badge {
+  background: radial-gradient(circle at 50% 35%, #ffffff, #cfd8e3);
+  color: #1e293b; font-weight: 900;
+  box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.15), 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .seat.turn .pod, .pot-label.bump, .seat.winner .pod { animation: none !important; }
+  .act-btn:hover, .btn-muted:hover, .btn-primary:hover { transform: none; }
+}
